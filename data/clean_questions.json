@@ -1,0 +1,802 @@
+[
+  {
+    "sample_id": "conv-26",
+    "qa_index": 83,
+    "question": "What did Melanie realize after the charity race?",
+    "gold_answer": "self-care is important",
+    "evidence_dia_id": "D2:3",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-26",
+    "qa_index": 85,
+    "question": "What are Caroline's plans for the summer?",
+    "gold_answer": "researching adoption agencies",
+    "evidence_dia_id": "D2:8",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-26",
+    "qa_index": 94,
+    "question": "What is Melanie's hand-painted bowl a reminder of?",
+    "gold_answer": "art and self-expression",
+    "evidence_dia_id": "D4:5",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-26",
+    "qa_index": 97,
+    "question": "What workshop did Caroline attend recently?",
+    "gold_answer": "LGBTQ+ counseling workshop",
+    "evidence_dia_id": "D4:13",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-26",
+    "qa_index": 104,
+    "question": "What book did Caroline recommend to Melanie?",
+    "gold_answer": "\"Becoming Nicole\"",
+    "evidence_dia_id": "D7:11",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-26",
+    "qa_index": 106,
+    "question": "What are the new shoes that Melanie got used for?",
+    "gold_answer": "Running",
+    "evidence_dia_id": "D7:19",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-26",
+    "qa_index": 127,
+    "question": "What did Caroline make for a local church?",
+    "gold_answer": "a stained glass window",
+    "evidence_dia_id": "D14:17",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-26",
+    "qa_index": 128,
+    "question": "What did Caroline find in her neighborhood during her walk?",
+    "gold_answer": "a rainbow sidewalk",
+    "evidence_dia_id": "D14:23",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-26",
+    "qa_index": 129,
+    "question": "Which song motivates Caroline to be courageous?",
+    "gold_answer": "Brave by Sara Bareilles",
+    "evidence_dia_id": "D15:23",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-26",
+    "qa_index": 140,
+    "question": "What did the posters at the poetry reading say?",
+    "gold_answer": "\"Trans Lives Matter\"",
+    "evidence_dia_id": "D17:19",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 40,
+    "question": "What is Jon's favorite style of dance?",
+    "gold_answer": "Contemporary",
+    "evidence_dia_id": "D1:8",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 44,
+    "question": "What does Gina say about the dancers in the photo?",
+    "gold_answer": "They look graceful",
+    "evidence_dia_id": "D1:26",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 45,
+    "question": "What is Jon's attitude towards being part of the dance festival?",
+    "gold_answer": "Glad",
+    "evidence_dia_id": "D1:28",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 50,
+    "question": "What did Jon say about Gina's progress with her store?",
+    "gold_answer": "hard work's paying off",
+    "evidence_dia_id": "D3:3",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 60,
+    "question": "What does Jon's dance make him?",
+    "gold_answer": "happy",
+    "evidence_dia_id": "D9:5",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 66,
+    "question": "What is Jon offering to the dancers at his dance studio?",
+    "gold_answer": "One-on-one mentoring and training",
+    "evidence_dia_id": "D13:7",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 69,
+    "question": "What did Jon take a trip to Rome for?",
+    "gold_answer": "To clear his mind",
+    "evidence_dia_id": "D15:1",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 70,
+    "question": "What is Jon working on opening?",
+    "gold_answer": "a dance studio",
+    "evidence_dia_id": "D15:3",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 72,
+    "question": "How does Jon feel about the opening night of his dance studio?",
+    "gold_answer": "excited",
+    "evidence_dia_id": "D15:7",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-30",
+    "qa_index": 73,
+    "question": "How does Gina describe the feeling that dance brings?",
+    "gold_answer": "magical",
+    "evidence_dia_id": "D15:8",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 88,
+    "question": "What topic has John been blogging about recently?",
+    "gold_answer": "politics and the government",
+    "evidence_dia_id": "D12:1",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 92,
+    "question": "How often does John work out with his family?",
+    "gold_answer": "Three times a week",
+    "evidence_dia_id": "D13:7",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 101,
+    "question": "What event is Maria getting ready for at the shelter on May 25, 2023?",
+    "gold_answer": "fundraiser",
+    "evidence_dia_id": "D16:2",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 102,
+    "question": "What does Maria need to spread the word about for the fundraiser for the volunteer shelter?",
+    "gold_answer": "chili cook-off",
+    "evidence_dia_id": "D16:4",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 106,
+    "question": "What important values does John want to teach his kids through adopting a rescue dog?",
+    "gold_answer": "Responsibility and compassion",
+    "evidence_dia_id": "D17:11",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 111,
+    "question": "What yoga activity has Maria been trying to improve her strength and endurance?",
+    "gold_answer": "kundalini yoga",
+    "evidence_dia_id": "D19:3",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 117,
+    "question": "What event did John participate in to show support for veterans' rights?",
+    "gold_answer": "marching event",
+    "evidence_dia_id": "D21:22",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 126,
+    "question": "What did John take away from visiting the veteran's hospital?",
+    "gold_answer": "appreciation for giving back",
+    "evidence_dia_id": "D24:1",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 134,
+    "question": "How did John describe his kids' reaction at the military memorial?",
+    "gold_answer": "awestruck and humbled",
+    "evidence_dia_id": "D27:11",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-41",
+    "qa_index": 141,
+    "question": "Who did John work with to raise awareness and funds for victims of domestic abuse?",
+    "gold_answer": "a local organization",
+    "evidence_dia_id": "D29:10",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 98,
+    "question": "What genre is Joanna's first screenplay?",
+    "gold_answer": "drama and romance",
+    "evidence_dia_id": "D2:5",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 109,
+    "question": "What was Joanna's audition for?",
+    "gold_answer": "writing gig",
+    "evidence_dia_id": "D6:2",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 114,
+    "question": "What kind of books does Nate enjoy?",
+    "gold_answer": "Adventures and magic",
+    "evidence_dia_id": "D9:14",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 157,
+    "question": "What dessert did Joanna share a photo of that has an almond flour crust, chocolate ganache, and fresh raspberries?",
+    "gold_answer": "chocolate raspberry tart",
+    "evidence_dia_id": "D21:11",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 159,
+    "question": "What two main ingredients are part of the dessert Joanna shared a photo of with blueberries, coconut milk, and a gluten-free crust?",
+    "gold_answer": "blueberries and coconut milk",
+    "evidence_dia_id": "D21:17",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 164,
+    "question": "What game has Nate been playing nonstop with a futuristic setting and gameplay on October 9, 2022?",
+    "gold_answer": "Cyberpunk 2077",
+    "evidence_dia_id": "D23:17",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 174,
+    "question": "What does Nate rely on for cheer and joy?",
+    "gold_answer": "his turtles",
+    "evidence_dia_id": "D24:3",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 179,
+    "question": "How did Joanna feel on October 25, 2022 about seeing her characters come alive on the big screen?",
+    "gold_answer": "surreal and cool",
+    "evidence_dia_id": "D25:6",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 186,
+    "question": "What dish did Nate make on 9 November, 2022?",
+    "gold_answer": "Homemade coconut ice cream",
+    "evidence_dia_id": "D28:1",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-42",
+    "qa_index": 192,
+    "question": "What did Joanna take a picture of near Fort Wayne last summer?",
+    "gold_answer": "Sunset",
+    "evidence_dia_id": "D28:22",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 113,
+    "question": "Which basketball team does Tim support?",
+    "gold_answer": "The Wolves",
+    "evidence_dia_id": "D12:21",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 120,
+    "question": "How does John feel about being seen as a mentor by some of the younger players?",
+    "gold_answer": "It feels great",
+    "evidence_dia_id": "D14:11",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 123,
+    "question": "What genre is the novel that Tim is writing?",
+    "gold_answer": "Fantasy",
+    "evidence_dia_id": "D15:3",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 133,
+    "question": "How did John describe the views during their road trip out on the European coastline?",
+    "gold_answer": "Spectacular",
+    "evidence_dia_id": "D17:3",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 141,
+    "question": "What book did John recently finish rereading that left him feeling inspired and hopeful about following dreams?",
+    "gold_answer": "The Alchemist",
+    "evidence_dia_id": "D19:20",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 145,
+    "question": "Where was the forest picture shared by John on December 1,2023 taken?",
+    "gold_answer": "near his hometown",
+    "evidence_dia_id": "D20:28",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 154,
+    "question": "How did John feel about the atmosphere during the big game against the rival team?",
+    "gold_answer": "electric and intense",
+    "evidence_dia_id": "D23:5",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 159,
+    "question": "What type of seminars is John conducting?",
+    "gold_answer": "Sports and marketing seminars",
+    "evidence_dia_id": "D26:1",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 169,
+    "question": "What kind of painting does John have in his room as a reminder?",
+    "gold_answer": "a painting of Aragorn",
+    "evidence_dia_id": "D27:28",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-43",
+    "qa_index": 173,
+    "question": "Which city in Ireland will Tim be staying in during his semester abroad?",
+    "gold_answer": "Galway",
+    "evidence_dia_id": "D28:3",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 62,
+    "question": "What did Andrew express missing about exploring nature trails with his family's dog?",
+    "gold_answer": "The peaceful moments",
+    "evidence_dia_id": "D2:18",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 74,
+    "question": "How does Andrew feel about their search for a pet-friendly place?",
+    "gold_answer": "Discouraged but determined",
+    "evidence_dia_id": "D7:8",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 85,
+    "question": "What type of classes did Audrey start with her pups recently on 4 August, 2023?",
+    "gold_answer": "Agility classes",
+    "evidence_dia_id": "D14:2",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 86,
+    "question": "How often does Audrey take her pups to the park for practice?",
+    "gold_answer": "Twice a week",
+    "evidence_dia_id": "D14:4",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 90,
+    "question": "What did Audrey organize with the neighbors' dogs?",
+    "gold_answer": "a doggy playdate",
+    "evidence_dia_id": "D18:6",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 95,
+    "question": "What kind of flowers does Audrey take care of?",
+    "gold_answer": "Peruvian Lilies",
+    "evidence_dia_id": "D19:20",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 109,
+    "question": "What kind of experiences are Audrey's dogs the best companions for?",
+    "gold_answer": "Exploring the great outdoors",
+    "evidence_dia_id": "D23:24",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 114,
+    "question": "What type of date is Andrew going on Sunday?",
+    "gold_answer": "picnic date",
+    "evidence_dia_id": "D26:20",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 116,
+    "question": "What aspect of autumn does Andrew find beautiful?",
+    "gold_answer": "The autumn colors",
+    "evidence_dia_id": "D26:36",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-44",
+    "qa_index": 118,
+    "question": "How often does Audrey meet up with other dog owners for tips and playdates?",
+    "gold_answer": "Once a week",
+    "evidence_dia_id": "D27:4",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 73,
+    "question": "How long has John been playing the drums as of 27 March, 2022?",
+    "gold_answer": "One month",
+    "evidence_dia_id": "D3:5",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 82,
+    "question": "Which country did James visit in 2021?",
+    "gold_answer": "Italy",
+    "evidence_dia_id": "D6:12",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 103,
+    "question": "What new hobby did James become interested in on 9 July, 2022?",
+    "gold_answer": "Extreme sports",
+    "evidence_dia_id": "D16:5",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 109,
+    "question": "What happened to James's puppy during the recent visit to the clinic?",
+    "gold_answer": "routine examination and vaccination",
+    "evidence_dia_id": "D18:16",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 116,
+    "question": "What type of beer does John not like?",
+    "gold_answer": "dark beer",
+    "evidence_dia_id": "D21:16",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 121,
+    "question": "What did James and Samantha discover they both enjoy at McGee's bar?",
+    "gold_answer": "Lager beer",
+    "evidence_dia_id": "D23:3",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 122,
+    "question": "How much does James pay per cooking class?",
+    "gold_answer": "$10",
+    "evidence_dia_id": "D23:15",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 131,
+    "question": "What did John use to play when he was younger to let off steam?",
+    "gold_answer": "drums",
+    "evidence_dia_id": "D24:15",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 136,
+    "question": "What does John feel about starting the journey as a programming mentor for game developers?",
+    "gold_answer": "excited and inspired",
+    "evidence_dia_id": "D26:5",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-47",
+    "qa_index": 149,
+    "question": "What is the name of John's cousin's dog?",
+    "gold_answer": "Luna",
+    "evidence_dia_id": "D31:22",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 98,
+    "question": "When did Jolene's parents give her first console?",
+    "gold_answer": "when she was 10",
+    "evidence_dia_id": "D24:6",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 107,
+    "question": "What does Deborah bring with her whenever she comes to reflect on her mom?",
+    "gold_answer": "amulet",
+    "evidence_dia_id": "D4:36",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 116,
+    "question": "According to Jolene, what does exercise help her to feel?",
+    "gold_answer": "connected to her body",
+    "evidence_dia_id": "D7:20",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 129,
+    "question": "Which show did Deborah go to with a friend on 9 April, 2023?",
+    "gold_answer": "an art show",
+    "evidence_dia_id": "D12:1",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 136,
+    "question": "Which new yoga pose did Deborah share a photo of?",
+    "gold_answer": "tree pose",
+    "evidence_dia_id": "D14:15",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 150,
+    "question": "What game did Jolene suggest as an awesome open-world game for the Nintendo Switch?",
+    "gold_answer": "Zelda BOTW",
+    "evidence_dia_id": "D19:8",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 153,
+    "question": "What did Deborah and her mom chat about at their special bench in the park?",
+    "gold_answer": "dreams and life",
+    "evidence_dia_id": "D19:19",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 160,
+    "question": "What kind of event did Jolene present at recently?",
+    "gold_answer": "virtual conference",
+    "evidence_dia_id": "D21:6",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 161,
+    "question": "What did Jolene's mom stress the value of, which she wants to keep in mind for her engineering projects?",
+    "gold_answer": "Helping others",
+    "evidence_dia_id": "D22:6",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-48",
+    "qa_index": 186,
+    "question": "What food did Deborah's mom make for her on birthdays?",
+    "gold_answer": "Pineapple cakes",
+    "evidence_dia_id": "D29:9",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 92,
+    "question": "What frustrating issue did Sam face at the supermarket?",
+    "gold_answer": "broken self-checkout machines",
+    "evidence_dia_id": "D3:16",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 94,
+    "question": "What kind of water does Evan suggest Sam try as an alternative to soda?",
+    "gold_answer": "Flavored seltzer water",
+    "evidence_dia_id": "D4:8",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 99,
+    "question": "What did Evan suggest Sam to check out for insights into his dream?",
+    "gold_answer": "dream interpretation book",
+    "evidence_dia_id": "D6:15",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 111,
+    "question": "What sports activity has Evan been doing to stay active while dealing with the knee injury?",
+    "gold_answer": "Swimming",
+    "evidence_dia_id": "D9:6",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 120,
+    "question": "What advice did Evan give to Sam to avoid injuries while starting weightlifting?",
+    "gold_answer": "Find a trainer",
+    "evidence_dia_id": "D12:4",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 124,
+    "question": "What does Evan mention about his progress at the gym to Sam?",
+    "gold_answer": "gaining strength",
+    "evidence_dia_id": "D14:8",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 134,
+    "question": "What family event is Evan planning for next summer?",
+    "gold_answer": "big family reunion",
+    "evidence_dia_id": "D19:11",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 135,
+    "question": "What is the motto of Evan's family?",
+    "gold_answer": "'Bring it on Home'",
+    "evidence_dia_id": "D19:7",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 138,
+    "question": "What did Sam recently start enjoying to clear his head?",
+    "gold_answer": "running in the mornings",
+    "evidence_dia_id": "D21:9",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-49",
+    "qa_index": 151,
+    "question": "What movie did Sam watch that motivated him to keep up with his routine?",
+    "gold_answer": "The Godfather",
+    "evidence_dia_id": "D24:18",
+    "split": "test"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 84,
+    "question": "What fuels Calvin's soul?",
+    "gold_answer": "Performing live",
+    "evidence_dia_id": "D7:11",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 85,
+    "question": "What is Dave doing to relax on weekends?",
+    "gold_answer": "exploring parks",
+    "evidence_dia_id": "D8:4",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 89,
+    "question": "What kind of music has Calvin been creating lately?",
+    "gold_answer": "experimenting with different genres",
+    "evidence_dia_id": "D11:6",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 116,
+    "question": "What car did Dave work on in the junkyard?",
+    "gold_answer": "Ford Mustang",
+    "evidence_dia_id": "D21:4",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 118,
+    "question": "What do Calvin and Dave use to reach their goals?",
+    "gold_answer": "Hard work and determination",
+    "evidence_dia_id": "D21:15",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 121,
+    "question": "What did Calvin recently get that is a \"masterpiece on wheels\"?",
+    "gold_answer": "Ferrari",
+    "evidence_dia_id": "D23:16",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 126,
+    "question": "Which part of Tokyo is described as Tokyo's Times Square by Calvin?",
+    "gold_answer": "Shibuya Crossing",
+    "evidence_dia_id": "D24:19",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 127,
+    "question": "What specific location in Tokyo does Calvin mention being excited to explore?",
+    "gold_answer": "Shinjuku",
+    "evidence_dia_id": "D24:19",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 128,
+    "question": "What dish does Dave recommend Calvin to try in Tokyo?",
+    "gold_answer": "ramen",
+    "evidence_dia_id": "D24:20",
+    "split": "dev"
+  },
+  {
+    "sample_id": "conv-50",
+    "qa_index": 156,
+    "question": "Where did Dave take a stunning photo of a waterfall?",
+    "gold_answer": "Nearby park",
+    "evidence_dia_id": "D30:15",
+    "split": "dev"
+  }
+]

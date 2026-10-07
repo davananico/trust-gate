@@ -1,0 +1,10 @@
+# Paket utama, versi dikunci (API LangChain sering berubah antar versi).
+# Daftar lengkap semua dependensi ada di requirements-lock.txt.
+langchain==1.4.3
+langchain-core==1.6.7
+langchain-openai==1.6.7
+langchain-chroma==1.1.0
+langgraph==1.2.14
+chromadb==1.5.9
+python-dotenv==1.2.4
+pytest==9.1.1
