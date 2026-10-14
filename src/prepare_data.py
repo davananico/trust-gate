@@ -91,8 +91,11 @@ def main():
                 problems.append(f"{m['sample_id']} qa#{m['qa_index']}: {name} GAGAL")
 
         inject_sess = ev_sess + 1
-        speakers = {sample["conversation"]["speaker_a"], sample["conversation"]["speaker_b"]}
-        subject = next((sp for sp in speakers if sp in qa["question"]), None)
+        # Subjek = tokoh yang namanya muncul PALING AWAL di pertanyaan. Jangan pakai urutan set:
+        # urutan set berubah tiap run, jadi soal yang menyebut dua nama (mis. T27) jadi tidak reproducible.
+        speakers = [sample["conversation"]["speaker_a"], sample["conversation"]["speaker_b"]]
+        in_question = [sp for sp in speakers if sp in qa["question"]]
+        subject = min(in_question, key=qa["question"].index) if in_question else None
         targets.append({
             "target_id": f"T{i+1:02d}",
             "sample_id": m["sample_id"],

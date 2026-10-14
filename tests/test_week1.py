@@ -13,6 +13,13 @@ def test_semua_target_lolos_cek():
         assert all(t["checks"].values()), t["target_id"]
 
 
+def test_subjek_adalah_nama_pertama_di_pertanyaan():
+    for t in load("targets.json"):
+        assert t["subject"] and t["subject"] in t["question"], t["target_id"]
+    t27 = next(t for t in load("targets.json") if t["target_id"] == "T27")
+    assert t27["subject"] == "Audrey"  # soal menyebut Audrey dan Andrew
+
+
 def test_dev_dan_test_tidak_berbagi_percakapan():
     s = load("split.json")
     assert not set(s["dev"]) & set(s["test"])
