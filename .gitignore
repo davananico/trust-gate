@@ -9,3 +9,4 @@ chroma_db/
 
 # Konteks Claude Code (lokal saja)
 CLAUDE.md
+cache/

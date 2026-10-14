@@ -47,6 +47,7 @@ Ketiga serangan dibuat berpasangan sehingga tiap pasangan hanya berbeda satu fak
 - Split per percakapan, seed 2026: **dev** = conv-30, conv-44, conv-50 (15 target, 30 QA bersih);
   **test** = 7 percakapan lain (34 target, 70 QA bersih).
 - Total: 147 kasus racun (49 × 3), 49 memori eksternal bersih, 10 skenario A3-auth, 100 pertanyaan bersih.
+- **Pemilihan QA bersih:** dari QA LoCoMo kategori single-hop (bukan target, satu bukti, jawaban ≤ 4 kata), hanya soal yang jawaban emasnya muncul **utuh** (setelah normalisasi) di turn bukti, supaya bisa dinilai dengan string match; 10 soal per percakapan diambil acak (seed tetap). Teks soal dan jawaban persis dari LoCoMo. Keterbatasan: subset ini cenderung berisi soal berjawaban harfiah, sehingga clean accuracy tidak sebanding dengan skor LoCoMo di paper lain.
 - Validasi otomatis tiap target: kata kunci benar ada di gold answer dan turn bukti; nilai racun tidak pernah muncul di percakapan asli; sesi injeksi ada.
 
 **Redundansi fakta asli** (`truth_mentions_in_conv`): 19 target disebut 1×, 27 target disebut 2–5×, 3 target disebut ≥ 9× (T10 = 15, T39 = 59, satu lagi = 9).

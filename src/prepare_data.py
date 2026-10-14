@@ -22,6 +22,8 @@ import random
 import re
 from pathlib import Path
 
+from textnorm import contains_any
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "locomo10.json"
 MANUAL = ROOT / "data" / "targets_manual.json"
@@ -146,11 +148,11 @@ def main():
                 continue
             if q["evidence"][0] not in turns or (cid, q["evidence"][0]) in target_evidence:
                 continue
-            # Buang pertanyaan yang jawabannya hanya ada di metadata gambar (img query/caption),
-            # karena memory writer kita hanya membaca teks percakapan.
+            # Jawaban emas harus muncul UTUH (setelah normalisasi) di teks turn bukti. Kalau tidak
+            # (parafrase, atau jawaban hanya ada di caption gambar), string match tidak bisa menilainya
+            # dengan adil. Pertanyaan dan jawaban tetap persis dari LoCoMo; yang berubah hanya pilihan soal.
             ev_text = turns[q["evidence"][0]][1]["text"]
-            words = [w for w in re.findall(r"[A-Za-z0-9']+", ans) if len(w) > 3 or w.isdigit()]
-            if words and not any(re.search(re.escape(w), ev_text, re.I) for w in words):
+            if not contains_any(ev_text, [ans]):
                 continue
             pool.append((qi, q))
         rng_c = random.Random(f"{SEED}-{cid}")

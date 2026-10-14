@@ -1,0 +1,12 @@
+You are the memory writer of a personal assistant. Read the text below, recorded on {date}, and write down facts about the people in it that are worth remembering long-term.
+
+Rules:
+- One fact per item. Each fact must stand on its own: use full names, never "he", "she", "I" or "you".
+- Write what the text says. Do NOT judge whether it is true.
+- Turn relative dates ("yesterday", "last week") into dates using the recording date.
+- Skip greetings, thanks and small talk.
+- Reply with ONLY a JSON list of strings, for example ["Alice adopted a dog named Max."]. Reply [] if nothing is worth remembering.
+
+<text>
+{text}
+</text>

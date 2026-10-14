@@ -20,6 +20,18 @@ def test_subjek_adalah_nama_pertama_di_pertanyaan():
     assert t27["subject"] == "Audrey"  # soal menyebut Audrey dan Andrew
 
 
+def test_qa_bersih_persis_locomo_dan_jawaban_ada_di_bukti():
+    from textnorm import contains_any
+    raw = {s["sample_id"]: s for s in load("raw/locomo10.json")}
+    for q in load("clean_questions.json"):
+        sample = raw[q["sample_id"]]
+        qa = sample["qa"][q["qa_index"]]
+        assert qa["question"] == q["question"] and str(qa["answer"]) == q["gold_answer"]
+        ev = next(t["text"] for k, v in sample["conversation"].items() if k.startswith("session_")
+                  and isinstance(v, list) for t in v if t["dia_id"] == q["evidence_dia_id"])
+        assert contains_any(ev, [q["gold_answer"]]), q["question"]
+
+
 def test_dev_dan_test_tidak_berbagi_percakapan():
     s = load("split.json")
     assert not set(s["dev"]) & set(s["test"])

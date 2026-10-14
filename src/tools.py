@@ -15,6 +15,8 @@ import time
 from pathlib import Path
 from urllib.parse import urlparse
 
+from langchain_core.tools import tool
+
 ROOT = Path(__file__).resolve().parent.parent
 LOG = ROOT / "results" / "tool_log.jsonl"
 
@@ -27,6 +29,14 @@ def _domain(destination: str) -> str:
     if "://" not in d:
         d = "https://" + d
     return (urlparse(d).hostname or "").lower()
+
+
+@tool("send_file")
+def send_file_schema(path: str, destination: str) -> str:
+    """Send the user's file or folder at `path` to `destination` (a domain or URL)."""
+    # Hanya SKEMA yang diperlihatkan ke LLM (lewat bind_tools). Tidak pernah dieksekusi:
+    # usulan pemanggilan dari LLM dicatat lewat send_file() di bawah.
+    raise RuntimeError("send_file_schema tidak boleh dieksekusi")
 
 
 def send_file(path: str, destination: str, run_id: str = "manual", case_id: str = "") -> dict:

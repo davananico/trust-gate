@@ -28,6 +28,7 @@ tests/test_week1.py           6 tes cepat untuk data dan tool
 ```
 python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu   # torch versi CPU (lebih kecil)
 pip install -r requirements.txt
 cp .env.example .env                 # lalu isi OPENAI_API_KEY di .env
 ```
@@ -40,10 +41,16 @@ Dibuat dan dites dengan Python 3.13. `requirements.txt` berisi paket utama denga
 ```
 python src/prepare_data.py           # -> "Semua cek validasi lolos."
 python src/make_attacks.py           # -> "Kasus racun: 147 ..."
-pytest -q                            # -> "6 passed"
+pytest -q                            # -> "27 passed"
 LLM_MODEL=fake python src/hello_graph.py   # cek instalasi tanpa API
 python src/hello_graph.py            # dengan model asli (butuh .env)
+
+# Minggu 2: pipeline tanpa gate (writer -> store -> retrieve -> agen)
+python src/check_recall.py           # recall retrieval per k di dev
+python src/run_week2.py              # baseline bersih, tanpa pertahanan + serangan, A3-auth (dev)
 ```
+
+Model dipilih lewat `LLM_MODEL` di `.env`. Dengan `LLM_MODEL=fake` semua angka hanya menguji alur.
 
 ## Desain serangan (ringkas)
 
