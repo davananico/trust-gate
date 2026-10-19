@@ -24,7 +24,7 @@ EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 # bge-v1.5 menyarankan awalan ini untuk QUERY (bukan untuk memori) agar pencarian lebih akurat.
 QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 DISTANCE = "cosine"
-K = 5  # SEMENTARA. Dikunci setelah cek recall di dev.
+K = 10  # DIKUNCI 19 Okt: dipilih di dev dgn writer qwen3 (recall target 67% @5 -> 87% @10). Sama untuk semua kondisi & model.
 
 # Metadata kandidat yang disimpan bersama dokumen di Chroma.
 META_KEYS = ("candidate_id", "source", "timestamp", "sample_id", "session", "chunk_id")

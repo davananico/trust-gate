@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 import locomo  # noqa: E402
 import llm  # noqa: E402
-from memory_writer import parse_list, write_memories  # noqa: E402
+from memory_writer import parse_list, parse_list_status, write_memories  # noqa: E402
 
 case_by_id = {c["case_id"]: c for c in json.load(open(ROOT / "data" / "poison_cases.json", encoding="utf-8"))}
 
@@ -23,6 +23,48 @@ def test_parse_list_toleran():
     assert parse_list("Here you go: []") == []
     assert parse_list("tidak ada json") == []
     assert parse_list('["rusak"') == []
+
+
+def test_parse_list_memperbaiki_koma_hilang():
+    # Bentuk keluaran olmo-3:7b-instruct pada quicktest (15 Okt): koma antar-item hilang.
+    reply = """["Caroline attended a pottery class." "Caroline's grandmother is from Sweden."]"""
+    items, status = parse_list_status(reply)
+    assert status == "repaired" and items == ["Caroline attended a pottery class.", "Caroline's grandmother is from Sweden."]
+    assert parse_list_status('["A."]')[1] == "ok"
+    assert parse_list_status("[]")[1] == "ok" and parse_list_status("tidak ada json")[1] == "failed"
+
+
+def test_parse_list_memperbaiki_item_berkurung_kurawal():
+    # Bentuk keluaran qwen3:8b untuk conv-26 sesi 4 (19 Okt): tiap item dibungkus {"..."}.
+    reply = '[{"Caroline received a necklace from her grandma in Sweden."},{"Melanie went camping."}]'
+    items, status = parse_list_status(reply)
+    assert status == "repaired"
+    assert items == ["Caroline received a necklace from her grandma in Sweden.", "Melanie went camping."]
+    # Objek JSON sungguhan ({"key": "value"}): nilai teksnya diambil, bukan dibuang.
+    assert parse_list_status('[{"fact": "A."}]') == (["A."], "ok")
+
+
+def test_parse_list_salvage_json_rusak():
+    # Bentuk nyata qwen3:8b conv-26 sesi 3 & 7 (19 Okt): kurawal penutup hilang, kutip di dalam kalimat tak di-escape.
+    reply = '[{"Caroline is thankful."},{"Caroline likes the book "Becoming Nicole" a lot."},{"Family is everything."]'
+    items, status = parse_list_status(reply)
+    assert status == "salvaged"
+    assert items == ["Caroline is thankful.", 'Caroline likes the book "Becoming Nicole" a lot.', "Family is everything."]
+
+
+def test_parse_list_beberapa_daftar_per_baris():
+    # Bentuk nyata olmo-3:7b-instruct (19 Okt): satu daftar per baris, ada daftar kosong.
+    reply = '["Jon lost his job as a banker."]  \n[]\n["Gina\'s favorite dance style is contemporary"]  \n["Jon won."]\n[]'
+    items, status = parse_list_status(reply)
+    assert status == "repaired"
+    assert items == ["Jon lost his job as a banker.", "Gina's favorite dance style is contemporary", "Jon won."]
+
+
+def test_parse_list_jawaban_terpotong():
+    # Bentuk nyata qwen3:8b (19 Okt): berputar sampai batas 1024 token, terpotong di tengah item.
+    reply = '[{"Audrey has four dogs."},{"Pets bring comfort."},{"Pets bring comfort."},{"Aud'
+    items, status = parse_list_status(reply)
+    assert status == "truncated" and items == ["Audrey has four dogs.", "Pets bring comfort."]
 
 
 def test_racun_A1_jadi_kandidat_dialog():

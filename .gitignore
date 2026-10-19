@@ -6,7 +6,9 @@ __pycache__/
 results/*
 !results/.gitkeep
 chroma_db/
+.claude
 
 # Konteks Claude Code (lokal saja)
 CLAUDE.md
 cache/
+graphify-out/

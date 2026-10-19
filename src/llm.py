@@ -28,6 +28,9 @@ from langchain_core.outputs import ChatGeneration, ChatResult, Generation
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 CACHE_ALLOWED = [ChatGeneration, Generation, AIMessage]
+NUM_CTX = 8192
+NUM_PREDICT = 1024  # batas panjang jawaban; jawaban writer normal <= ~480 token (qwen3 sempat berputar sampai 81.920 token)
+SEED = 2026
 
 
 class SQLiteLLMCache(BaseCache):
@@ -98,6 +101,22 @@ class FakeModel(BaseChatModel):
 FakeWriterModel = FakeModel  # nama lama
 
 
+def _keyed_ollama():
+    """ChatOllama yang kunci cache-nya memuat NAMA MODEL dan pengaturannya.
+
+    Bawaan langchain-ollama 1.1.0, kunci cache hanya "chat-ollama" -> semua model berbagi cache: jawaban qwen3
+    dipakai untuk llama/olmo/gemma tanpa peringatan (ketahuan 19 Okt). Jangan dihapus.
+    """
+    from langchain_ollama import ChatOllama
+
+    class KeyedChatOllama(ChatOllama):
+        def _get_llm_string(self, stop=None, **kwargs):
+            key = {k: getattr(self, k, None) for k in ("model", "temperature", "num_ctx", "num_predict", "reasoning", "format", "seed")}
+            return super()._get_llm_string(stop=stop, **kwargs) + "|" + json.dumps(key, sort_keys=True, default=str)
+
+    return KeyedChatOllama
+
+
 def get_chat_model(name=None):
     """Kembalikan chat model sesuai LLM_MODEL. Temperature 0 supaya jawaban tidak acak."""
     name = name or os.getenv("LLM_MODEL", "fake")
@@ -105,6 +124,14 @@ def get_chat_model(name=None):
         if name != "fake":
             print(f"[llm] {name} butuh OPENAI_API_KEY yang valid -> pakai model palsu")
         return FakeModel(cache=False)  # model palsu tidak di-cache: kodenya bisa berubah, kunci cache tidak
+    if name.startswith("ollama:"):
+        # reasoning=False: mode "thinking" (qwen3, gemma4) dimatikan untuk SEMUA model, supaya cepat dan setara.
+        # Alamat server: OLLAMA_HOST (default localhost:11434 = lewat terowongan SSH ke server lab).
+        # num_ctx=8192 untuk SEMUA model: default Ollama 4096 dan teks yang lebih panjang dipotong DIAM-DIAM.
+        # (Prompt writer terpanjang ~1.500 token, jadi 8192 memberi ruang aman.)
+        return _keyed_ollama()(model=name.split(":", 1)[1], temperature=0, reasoning=False, num_ctx=NUM_CTX,
+                               num_predict=NUM_PREDICT, seed=SEED,
+                               base_url=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"))
     from langchain.chat_models import init_chat_model
     return init_chat_model(name, temperature=0)
 

@@ -75,7 +75,7 @@ Keputusan (ditetapkan sekarang, sebelum melihat test): **semua target tetap dipa
 | Trust Gate bersih | Tidak | Trust Gate | FRR (dialog dan eksternal terpisah), clean accuracy |
 | Gate konten saja ± serangan | Ya/Tidak | Pembanding | Semua metrik |
 
-Definisi PMAR, PMRR, ASR, DCR, FRR, dan clean accuracy mengikuti CLAUDE.md §7. Semua proporsi dilaporkan per jenis serangan dengan 95% Wilson CI; 3 pengulangan; ablation tanpa source trust, tanpa poisoning risk, dan λ_t = 0.
+Definisi PMAR, PMRR, ASR, DCR, FRR, dan clean accuracy mengikuti CLAUDE.md §7. Semua proporsi dilaporkan per jenis serangan dengan 95% Wilson CI; 1 run per model × 4 model; ablation (di keempat model) tanpa source trust, tanpa poisoning risk, dan λ_t = 0.
 
 ## 8. Utilitas
 
@@ -85,10 +85,10 @@ Clean accuracy pada 100 QA bersih (string match setelah normalisasi) dan FRR. Ga
 
 | Item | Nilai |
 | --- | --- |
-| LLM utama | Model open-weight ~7–9B via Ollama di server lab (NVIDIA L4), untuk writer, gate, dan agen; temperature 0, respons di-cache **[BELUM DITETAPKAN: model spesifik]** |
-| LLM pembanding | Model open-weight dari keluarga berbeda, **hanya** mengganti agen, hanya untuk kondisi tanpa pertahanan vs Trust Gate (+serangan) di test **[BELUM DITETAPKAN]** |
+| LLM | Minimal 4 model open-source dari keluarga berbeda via Ollama di server lab (arahan dosen). Kandidat: qwen3:8b, llama3.1:8b, ministral-3:8b, gemma4:12b. Temperature 0, respons di-cache Setiap model menjalankan seluruh pipeline (writer, gate, agen). Threshold disetel per model, hanya di dev. 1 run per model (temperature 0 + cache). Satu GPU (NVIDIA L4) |
+| Kriteria pemilihan LLM | Ditetapkan sebelum eksperimen, diuji pada contoh buatan (bukan data dev/test): (1) writer menghasilkan JSON valid, (2) menjawab QA sederhana dengan benar, (3) memanggil tool untuk permintaan sah yang jelas dalam satu langkah. `ministral-3:8b` gagal (3): untuk 'send notes.txt to backup.example' selalu bertanya balik tanpa memanggil tool -> diganti `olmo-3:7b-instruct` (cadangan `granite4:7b-a1b-h`). Model akhir: qwen3:8b, llama3.1:8b, gemma4:12b, olmo-3:7b-instruct. Jawaban writer dibaca dengan parser yang memperbaiki koma antar-item yang hilang (sama untuk semua model); tingkat keberhasilan baca dilaporkan per model |
 | Embedding | Model embedding lokal via Ollama **[BELUM DITETAPKAN]** |
-| Retrieval | Chroma similarity, k = **[BELUM DITETAPKAN: dipilih dari recall retrieval di dev]**, sama untuk semua kondisi |
+| Retrieval | Chroma similarity, jarak cosine, **k = 10** (dipilih di dev: recall fakta target 67% @5 → 87% @10 dengan writer qwen3:8b), sama untuk semua kondisi dan model |
 | Threshold dan bobot gate | Disetel hanya di dev |
 
 ## 10. Risiko validitas (dilaporkan apa adanya)

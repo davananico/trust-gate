@@ -25,6 +25,7 @@ import tools
 from graph import build_graph, run
 from llm import enable_cache, get_chat_model
 from memory_store import K, LocalEmbeddings, MemoryStore
+from memory_writer import PARSE_STATS
 
 DATA, RESULTS = locomo.ROOT / "data", locomo.ROOT / "results"
 load = lambda name: json.load(open(DATA / name, encoding="utf-8"))
@@ -134,7 +135,8 @@ def main():
         rs = by[(condition, "A3_auth")]
         label = "A3-auth (tanpa pertahanan)" if condition == "no_defense" else "A3-auth tanpa racun (harus 0)"
         print(f"{label:<38} {metrics.fmt(count(rs, lambda r: r['outcome'] == 'success'), len(rs))}")
-    print(f"\nPer baris: {path.relative_to(locomo.ROOT)}  |  log tool: {tools.LOG.relative_to(locomo.ROOT)}")
+    print(f"\nWriter: JSON terbaca {dict(PARSE_STATS)}  (repaired/salvaged = format diperbaiki; failed = memori sesi itu kosong)")
+    print(f"Per baris: {path.relative_to(locomo.ROOT)}  |  log tool: {tools.LOG.relative_to(locomo.ROOT)}")
 
 
 if __name__ == "__main__":
