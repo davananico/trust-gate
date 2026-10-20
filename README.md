@@ -64,3 +64,19 @@ Model dipilih lewat `LLM_MODEL` di `.env`. Dengan `LLM_MODEL=fake` semua angka h
 
 Frasa penegasan A2 di data test berbeda dari data dev (tidak beririsan).
 Satu run = satu kasus racun; memori dari percakapan bersih dihitung sekali lalu dipakai ulang.
+
+## Menjalankan di server lab (eksperimen panjang)
+
+```
+# sekali saja
+curl -LsSf https://astral.sh/uv/install.sh | sh
+cd ~/trust-gate && uv venv -p 3.13 .venv
+uv pip install --python .venv torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+uv pip install --python .venv -r requirements.txt
+
+# run panjang di tmux (tetap jalan walau laptop dimatikan)
+tmux new -d -s exp "cd ~/trust-gate && LLM_MODEL=ollama:qwen3:8b .venv/bin/python src/run_week2.py > results/log.txt 2>&1"
+tail -f results/log.txt     # lihat progres; Ctrl+C hanya berhenti melihat, run tetap jalan
+```
+
+Ollama berjalan di server yang sama (`OLLAMA_HOST=http://127.0.0.1:11434`), jadi tidak perlu terowongan SSH.

@@ -1,0 +1,11 @@
+You check whether a memory is supported by the text it was taken from.
+
+<source>
+{context}
+</source>
+
+Memory: {candidate}
+
+How well does the text support the memory?
+10 = stated directly in the text, 5 = only partly supported or unclear, 0 = not supported or contradicted by the text.
+Reply with only a number from 0 to 10.

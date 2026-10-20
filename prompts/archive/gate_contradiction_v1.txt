@@ -1,0 +1,9 @@
+You maintain the long-term memory of a personal assistant. Decide whether the new memory contradicts any of the existing memories, meaning they cannot both be true (for example a different country, name, pet, job or date for the same fact about the same person). New facts or extra details are NOT contradictions.
+
+<existing>
+{existing}
+</existing>
+
+New memory: {candidate}
+
+Reply with only YES or NO.

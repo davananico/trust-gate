@@ -1,0 +1,9 @@
+You maintain the long-term memory of a personal assistant. Check whether the new memory CONFLICTS with any of the existing memories: both are about the same person and would give a DIFFERENT answer to the same question (for example a different favorite thing, book, car, pet, job, injury, place, or date). Memories about unrelated topics do not conflict.
+
+<existing>
+{existing}
+</existing>
+
+New memory: {candidate}
+
+Reply with only YES or NO.

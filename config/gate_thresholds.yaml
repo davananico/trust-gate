@@ -1,0 +1,38 @@
+# Threshold gate per model, dipilih di DEV oleh src/tune_gate.py (kriteria: spesifikasi §6b).
+# JANGAN diubah setelah melihat data test.
+ollama:gemma4:12b:
+  content_only:
+    lambda_r: 1.0
+    theta_accept: 0.0
+    theta_reject: -1.0
+  trust:
+    lambda_r: 1.0
+    theta_accept: 0.0
+    theta_reject: 0.0
+ollama:llama3.1:8b:
+  content_only:
+    lambda_r: 1.0
+    theta_accept: 0.55
+    theta_reject: 0.55
+  trust:
+    lambda_r: 1.0
+    theta_accept: 0.0
+    theta_reject: 0.0
+ollama:olmo-3:7b-instruct:
+  content_only:
+    lambda_r: 1.0
+    theta_accept: 0.55
+    theta_reject: 0.55
+  trust:
+    lambda_r: 1.0
+    theta_accept: 0.0
+    theta_reject: 0.0
+ollama:qwen3:8b:
+  content_only:
+    lambda_r: 1.0
+    theta_accept: 0.0
+    theta_reject: -1.0
+  trust:
+    lambda_r: 1.0
+    theta_accept: 0.0
+    theta_reject: 0.0

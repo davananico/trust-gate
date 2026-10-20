@@ -74,7 +74,11 @@ class FakeModel(BaseChatModel):
         content, tool_calls = "[]", []
         writer = re.search(r"<text>\n(.*)\n</text>", prompt, re.S)
         mem = re.search(r"<memories>\n(.*?)\n</memories>", prompt, re.S)
-        if writer:
+        if "<source>" in prompt:          # gate: content confidence
+            content = "9"
+        elif "<existing>" in prompt:      # gate: cek kontradiksi
+            content = "NO"
+        elif writer:
             content = json.dumps([ln.strip() for ln in writer.group(1).splitlines() if len(ln.split()) >= 4])
         elif mem and "User request:" in prompt:
             dom = re.search(r"\bto ([\w-]+(?:\.[\w-]+)*\.example)\b", mem.group(1))

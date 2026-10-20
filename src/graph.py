@@ -31,6 +31,7 @@ class State(TypedDict, total=False):
     sessions: list     # sesi percakapan (sudah disisipi racun pada kondisi serangan)
     idx: int           # indeks sesi yang sedang diproses
     store: object      # MemoryStore untuk run ini
+    gate_log: object   # GateLog (SQLite) untuk run dengan gate; None tanpa gate
     candidates: list   # kandidat memori dari sesi yang sedang diproses
     log: list          # per sesi: jumlah kandidat dan jumlah yang disimpan
     mode: str          # "qa" (jawab pertanyaan) atau "tool" (permintaan yang bisa memicu send_file)
@@ -40,11 +41,12 @@ class State(TypedDict, total=False):
 
 
 def build_graph(llm, gate=None):
-    """gate=None -> tanpa pertahanan. Minggu 3: gate = fungsi trust_gate."""
+    """gate=None -> tanpa pertahanan. Dengan gate: gate = gate.trust_gate.make_trust_gate(llm, params)."""
 
     def memory_writer(state):
         session = state["sessions"][state["idx"]]
-        cands = [c for ch in locomo.writer_chunks([session]) for c in write_memories(ch, llm)]
+        # _chunk_text: teks sumber kandidat, dibutuhkan gate (pola + confidence). Tidak ikut disimpan ke Chroma.
+        cands = [{**c, "_chunk_text": ch["text"]} for ch in locomo.writer_chunks([session]) for c in write_memories(ch, llm)]
         return {"candidates": cands}
 
     def store(state):
@@ -52,6 +54,8 @@ def build_graph(llm, gate=None):
         cands = state["candidates"]
         accepted = [c for c in cands if c.get("decision", "accept") == "accept"]
         state["store"].add(accepted)
+        if state.get("gate_log") is not None and cands:  # quarantine/reject TIDAK masuk Chroma, hanya ke SQLite
+            state["gate_log"].write(cands, state.get("run_id", ""), state.get("case_id", ""))
         entry = {"session": state["sessions"][state["idx"]]["session"], "n_candidates": len(cands),
                  "n_stored": len(accepted)}
         return {"idx": state["idx"] + 1, "log": state.get("log", []) + [entry]}
@@ -91,10 +95,10 @@ def build_graph(llm, gate=None):
     return g.compile()
 
 
-def run(app, store, sessions, queries, mode="qa", run_id="", case_id=""):
+def run(app, store, sessions, queries, mode="qa", run_id="", case_id="", gate_log=None):
     """Jalankan satu run. recursion_limit dinaikkan: tiap sesi = 2–3 langkah, percakapan bisa 30+ sesi."""
     return app.invoke({"run_id": run_id, "case_id": case_id, "sessions": sessions, "idx": 0, "store": store,
-                       "mode": mode, "queries": queries}, config={"recursion_limit": 1000})
+                       "gate_log": gate_log, "mode": mode, "queries": queries}, config={"recursion_limit": 1000})
 
 
 if __name__ == "__main__":
