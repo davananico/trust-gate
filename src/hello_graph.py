@@ -1,22 +1,22 @@
 """
-hello_graph.py — latihan LangGraph Minggu 1: graph 3 node yang memanggil LLM.
+hello_graph.py — LangGraph warm-up exercise: a 3-node graph that calls an LLM.
 
-Bukan bagian eksperimen. Tujuannya hanya memastikan LangChain, LangGraph, dan Chroma
-terpasang dan kamu paham tiga konsep dasarnya:
+Not part of the experiment. It only checks that LangChain, LangGraph and Chroma are installed and illustrates
+the three basic concepts:
 
-  State   = "papan tulis" bersama yang dibaca dan ditulis setiap node (di sini: dict TypedDict).
-  Node    = satu langkah kerja (fungsi Python biasa) yang menerima state dan mengembalikan perubahan.
-  Edge    = panah antar-node. Conditional edge = panah yang tujuannya dipilih oleh sebuah fungsi.
+  State   = a shared "whiteboard" read and written by every node (here: a TypedDict).
+  Node    = one step of work (a plain Python function) that receives the state and returns updates.
+  Edge    = an arrow between nodes. Conditional edge = an arrow whose target is chosen by a function.
 
-Alur graph:
+Graph flow:
 
-  write_memory ──(ada fakta?)──► store ──► answer ──► END
+  write_memory ──(fact found?)──► store ──► answer ──► END
         │
-        └──(tidak ada fakta)──► END
+        └──(no fact)──► END
 
-Cara menjalankan (dari folder proyek, venv aktif):
-  python src/hello_graph.py            # pakai model asli jika .env berisi kunci API
-  LLM_MODEL=fake python src/hello_graph.py   # tanpa API: model palsu, untuk cek instalasi
+How to run (from the project folder, venv active):
+  python src/hello_graph.py            # uses the real model if .env has an API key
+  LLM_MODEL=fake python src/hello_graph.py   # no API: fake model, to check the installation
 """
 import os
 from typing import TypedDict
@@ -31,33 +31,33 @@ EMBED = os.getenv("EMBED_MODEL", "text-embedding-3-small")
 
 
 def make_models():
-    """Kembalikan (chat_model, embedding). Mode 'fake' tidak memanggil internet."""
+    """Returns (chat_model, embedding). 'fake' mode makes no network calls."""
     if MODEL == "fake" or not os.getenv("OPENAI_API_KEY"):
         from langchain_core.embeddings import DeterministicFakeEmbedding
         from langchain_core.language_models import FakeListChatModel
-        print("[mode fake] tidak ada kunci API -> pakai model palsu (jawaban sudah ditentukan)")
+        print("[fake mode] no API key -> using a fake model (predefined answers)")
         llm = FakeListChatModel(responses=["Caroline's grandmother is from Sweden.", "Sweden."])
         return llm, DeterministicFakeEmbedding(size=64)
     from langchain.chat_models import init_chat_model
     from langchain_openai import OpenAIEmbeddings
-    llm = init_chat_model(MODEL, temperature=0)  # temperature 0 = jawaban tidak acak
+    llm = init_chat_model(MODEL, temperature=0)  # temperature 0 = answers are not random
     return llm, OpenAIEmbeddings(model=EMBED)
 
 
 llm, embeddings = make_models()
-store = Chroma(collection_name="hello", embedding_function=embeddings)  # di memori, tidak ditulis ke disk
+store = Chroma(collection_name="hello", embedding_function=embeddings)  # in memory, not written to disk
 
 
 class State(TypedDict, total=False):
-    turn: str        # input: satu kalimat dialog
-    question: str    # input: pertanyaan di sesi berikutnya
-    memory: str      # diisi node write_memory
-    retrieved: list  # diisi node answer
-    answer: str      # diisi node answer
+    turn: str        # input: one dialog sentence
+    question: str    # input: a question in a later session
+    memory: str      # filled by the write_memory node
+    retrieved: list  # filled by the answer node
+    answer: str      # filled by the answer node
 
 
 def write_memory(state: State) -> State:
-    """Node 1 (memory writer): LLM meringkas turn jadi satu fakta pendek."""
+    """Node 1 (memory writer): the LLM condenses the turn into one short fact."""
     prompt = ("Extract one short factual memory about the speaker from this message. "
               "Reply with the fact only, or NONE if there is no fact.\n\n" + state["turn"])
     fact = llm.invoke(prompt).content.strip()
@@ -66,25 +66,25 @@ def write_memory(state: State) -> State:
 
 
 def has_memory(state: State) -> str:
-    """Fungsi conditional edge: menentukan node berikutnya."""
+    """Conditional-edge function: chooses the next node."""
     return "store" if state.get("memory") else END
 
 
 def store_memory(state: State) -> State:
-    """Node 2 (memory store): simpan fakta ke Chroma. Di eksperimen asli, Trust Gate ada SEBELUM node ini."""
+    """Node 2 (memory store): saves the fact to Chroma. In the real experiment the Trust Gate sits BEFORE this node."""
     store.add_texts([state["memory"]], metadatas=[{"source": "dialog"}])
-    print(f"[store] disimpan ke Chroma: {state['memory']}")
+    print(f"[store] saved to Chroma: {state['memory']}")
     return {}
 
 
 def answer(state: State) -> State:
-    """Node 3 (agen): ambil memori paling mirip, lalu LLM menjawab hanya dari memori itu."""
+    """Node 3 (agent): retrieve the most similar memory, then the LLM answers from that memory only."""
     docs = store.similarity_search(state["question"], k=1)
     mem = [d.page_content for d in docs]
     prompt = ("Answer the question using only these memories. Be short.\n"
               f"Memories: {mem}\nQuestion: {state['question']}")
     out = llm.invoke(prompt).content.strip()
-    print(f"[answer] memori diambil: {mem} -> jawaban: {out}")
+    print(f"[answer] retrieved memory: {mem} -> answer: {out}")
     return {"retrieved": mem, "answer": out}
 
 
@@ -103,4 +103,4 @@ if __name__ == "__main__":
         "turn": "Caroline: This necklace is a gift from my grandma in my home country, Sweden.",
         "question": "What country is Caroline's grandma from?",
     })
-    print("\nState akhir:", result)
+    print("\nFinal state:", result)

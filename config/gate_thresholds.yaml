@@ -1,5 +1,5 @@
-# Threshold gate per model, dipilih di DEV oleh src/tune_gate.py (kriteria: spesifikasi §6b).
-# JANGAN diubah setelah melihat data test.
+# Gate thresholds per model, chosen on DEV by src/tune_gate.py (criterion: spec §6b).
+# DO NOT change after looking at test data.
 ollama:gemma4:12b:
   content_only:
     lambda_r: 1.0

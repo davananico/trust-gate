@@ -1,11 +1,11 @@
 """
-gate/gate_log.py — catatan keputusan gate di SQLite (CLAUDE.md §4).
+gate/gate_log.py — gate decision log in SQLite.
 
-Tabel:
-  gate_decisions     SEMUA kandidat yang lewat gate + semua sinyal + keputusan (untuk threshold/ablation offline)
-  memory_quarantine  kandidat 'quarantine' (disimpan terpisah, TIDAK dipakai agen)
-  rejected_log       kandidat 'reject'
-Label serangan TIDAK disimpan di sini; dicocokkan saat evaluasi lewat case_id + isi kandidat.
+Tables:
+  gate_decisions     EVERY candidate that passes through the gate + all signals + decision (for offline threshold/ablation)
+  memory_quarantine  'quarantine' candidates (stored separately, NOT used by the agent)
+  rejected_log       'reject' candidates
+Attack labels are NOT stored here; they are matched at evaluation time via case_id + candidate content.
 """
 import sqlite3
 from pathlib import Path

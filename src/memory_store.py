@@ -1,15 +1,15 @@
 """
-memory_store.py — Minggu 2: memori aktif (ChromaDB) + retrieval top-k.
+memory_store.py — active memory (ChromaDB) + top-k retrieval.
 
-Pengaturan retrieval DIKUNCI di sini dan sama untuk semua kondisi (aturan CLAUDE.md no. 2):
-  EMBED_MODEL  model embedding lokal (sentence-transformers, jalan di CPU; gratis)
-  DISTANCE     metrik jarak Chroma
-  K            jumlah memori yang diambil (dipilih dari cek recall di dev; lihat src/check_recall.py)
+Retrieval settings are LOCKED here and identical for every condition:
+  EMBED_MODEL  local embedding model (sentence-transformers, runs on CPU; free)
+  DISTANCE     Chroma distance metric
+  K            number of memories retrieved (chosen from the recall check on dev; see src/check_recall.py)
 
-Hanya memori yang LOLOS (tanpa pertahanan: semua; dengan gate: hanya 'accept') yang boleh di-add ke sini.
-Memori quarantine/reject TIDAK pernah masuk Chroma, jadi agen tidak bisa mengambilnya.
+Only memories that PASS may be added here (no defense: all; with a gate: only 'accept').
+Quarantined/rejected memories NEVER enter Chroma, so the agent cannot retrieve them.
 
-Uji cepat: python src/memory_store.py
+Quick check: python src/memory_store.py
 """
 import sqlite3
 import uuid
@@ -21,17 +21,17 @@ from langchain_core.embeddings import Embeddings
 
 ROOT = Path(__file__).resolve().parent.parent
 EMBED_MODEL = "BAAI/bge-small-en-v1.5"
-# bge-v1.5 menyarankan awalan ini untuk QUERY (bukan untuk memori) agar pencarian lebih akurat.
+# bge-v1.5 recommends this prefix for QUERIES (not for memories) for more accurate search.
 QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 DISTANCE = "cosine"
-K = 10  # DIKUNCI 19 Okt: dipilih di dev dgn writer qwen3 (recall target 67% @5 -> 87% @10). Sama untuk semua kondisi & model.
+K = 10  # LOCKED 19 Oct: chosen on dev with the qwen3 writer (target recall 67% @5 -> 87% @10). Same for all conditions & models.
 
-# Metadata kandidat yang disimpan bersama dokumen di Chroma.
+# Candidate metadata stored with each document in Chroma.
 META_KEYS = ("candidate_id", "source", "timestamp", "sample_id", "session", "chunk_id")
 
 
 class LocalEmbeddings(Embeddings):
-    """Embedding sentence-transformers + cache SQLite (teks yang sama tidak dihitung ulang)."""
+    """sentence-transformers embeddings + SQLite cache (identical text is never re-embedded)."""
 
     def __init__(self, model_name=EMBED_MODEL, cache_path=ROOT / "cache" / "embeddings.sqlite"):
         from sentence_transformers import SentenceTransformer
@@ -64,7 +64,7 @@ class LocalEmbeddings(Embeddings):
 
 
 class MemoryStore:
-    """Satu memori aktif untuk satu run. Disimpan di RAM (tidak ditulis ke disk), jadi run tidak saling bocor."""
+    """One active memory for one run. Kept in RAM (not written to disk), so runs never leak into each other."""
 
     def __init__(self, embeddings):
         self.db = Chroma(collection_name=f"run-{uuid.uuid4().hex[:8]}", embedding_function=embeddings,
@@ -78,7 +78,7 @@ class MemoryStore:
                           ids=[c["candidate_id"] for c in candidates])
 
     def retrieve(self, question, k=K):
-        """Kembalikan k memori paling mirip: list dict {content, score, ...metadata}. score = jarak (kecil = mirip)."""
+        """Returns the k most similar memories: list of dicts {content, score, ...metadata}. score = distance (lower = closer)."""
         hits = self.db.similarity_search_with_score(question, k=k)
         return [{"content": d.page_content, "score": round(float(s), 4), **d.metadata} for d, s in hits]
 
@@ -93,12 +93,12 @@ if __name__ == "__main__":
     from llm import FakeWriterModel
     from memory_writer import write_memories
 
-    # Memori dari model palsu = baris dialog mentah. Cukup untuk mengecek bahwa retrieval bekerja.
+    # Memories from the fake model = raw dialog lines. Enough to check that retrieval works.
     case = json.load(open(ROOT / "data" / "poison_cases.json", encoding="utf-8"))[0]  # T01-A1
     sessions = locomo.inject_poison(locomo.load_sessions(case["sample_id"]), case)
     cands = [c for ch in locomo.writer_chunks(sessions) for c in write_memories(ch, FakeWriterModel(cache=False))]
     store = MemoryStore(LocalEmbeddings())
     store.add(cands)
-    print(f"{store.count()} memori disimpan. Pertanyaan: {case['question']}")
+    print(f"{store.count()} memories stored. Question: {case['question']}")
     for h in store.retrieve(case["question"]):
         print(f"  {h['score']:.3f}  S{h['session']:<2} [{h['source']}] {h['content'][:90]}")

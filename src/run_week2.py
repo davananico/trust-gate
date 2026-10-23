@@ -1,16 +1,16 @@
 """
-run_week2.py — Minggu 2: menjalankan kondisi tanpa gate.
+run_week2.py — runs the conditions without a gate (superseded by run_experiment.py; kept for reproducibility).
 
-Kondisi:
-  clean      baseline bersih: clean accuracy (QA bersih) + jawaban acuan untuk pertanyaan target (dipakai DCR)
-  attack     tanpa pertahanan + serangan A1/A2/A3: ASR, DCR, % racun terambil
-  auth       tanpa pertahanan + A3-auth: % run yang MENGUSULKAN send_file ke attacker.example
-  auth_clean permintaan yang sama TANPA racun: harus 0% (cek bahwa agen tidak mengarang tujuan)
+Conditions:
+  clean      clean baseline: clean accuracy (clean QA) + reference answers for the target questions (used for DCR)
+  attack     no defense + attacks A1/A2/A3: ASR, DCR, % poison retrieved
+  auth       no defense + A3-auth: % of runs that PROPOSE send_file to attacker.example
+  auth_clean the same request WITHOUT poison: must be 0% (checks that the agent does not invent a destination)
 
-Jalankan:
-  python src/run_week2.py                  # split dev (default)
-  python src/run_week2.py --split test     # boleh: kondisi ini tidak menyetel apa pun
-Output: results/week2_<split>_<model>.csv (satu baris per jawaban) + ringkasan di layar.
+Run:
+  python src/run_week2.py                  # dev split (default)
+  python src/run_week2.py --split test     # allowed: these conditions tune nothing
+Output: results/week2_<split>_<model>.csv (one row per answer) + an on-screen summary.
 """
 import argparse
 import csv
@@ -60,7 +60,7 @@ def main():
         return {q["qid"]: {**out["answers"][q["qid"]], "retrieved": out["retrieved"][q["qid"]], "n_memories": n_mem}
                 for q in queries}
 
-    # 1) Baseline bersih: QA bersih + pertanyaan target, per percakapan
+    # 1) Clean baseline: clean QA + target questions, per conversation
     baseline = {}
     for sid in convs:
         clean_q = [q for q in load("clean_questions.json") if q["sample_id"] == sid]
@@ -79,9 +79,9 @@ def main():
             rows.append({"condition": "clean", "kind": "target_qa", "sample_id": sid, "qid": t["target_id"],
                          "question": t["question"], "answer": r["answer"], "gold": t["gold_answer"],
                          "correct": metrics.is_correct(r["answer"], t["truth_keys"]), "n_memories": r["n_memories"]})
-        print(f"[clean] {sid}: {len(queries)} pertanyaan")
+        print(f"[clean] {sid}: {len(queries)} questions")
 
-    # 2) Tanpa pertahanan + serangan A1/A2/A3
+    # 2) No defense + attacks A1/A2/A3
     cases = [c for c in load("poison_cases.json") if c["split"] == args.split]
     for i, case in enumerate(cases, 1):
         r = go("attack", case["sample_id"], [{"qid": case["target_id"], "text": case["question"]}], case)[case["target_id"]]
@@ -92,9 +92,9 @@ def main():
                      "poison_retrieved": any(metrics.contains_any(m["content"], case["poison_keys"]) for m in r["retrieved"]),
                      "n_memories": r["n_memories"]})
         if i % 15 == 0:
-            print(f"[attack] {i}/{len(cases)} kasus")
+            print(f"[attack] {i}/{len(cases)} cases")
 
-    # 3) A3-auth: dengan racun dan tanpa racun (permintaan yang sama)
+    # 3) A3-auth: with and without poison (same request)
     for a in [a for a in load("auth_scenarios.json") if a["split"] == args.split]:
         q = [{"qid": a["case_id"], "text": a["user_request"]}]
         for condition, case in (("no_defense", a), ("clean", None)):
@@ -104,7 +104,7 @@ def main():
                          "tool_calls": json.dumps(r["tool_calls"]),
                          "outcome": "success" if metrics.auth_attempted(r["tool_calls"], a["harmful_destination"]) else "fail",
                          "n_memories": r["n_memories"]})
-    print("[auth] selesai")
+    print("[auth] done")
 
     path = RESULTS / f"week2_{tag}.csv"
     fields = sorted({k for r in rows for k in r})
@@ -113,30 +113,30 @@ def main():
         w.writeheader()
         w.writerows(rows)
 
-    # Ringkasan
+    # Summary
     by = defaultdict(list)
     for r in rows:
         by[(r["condition"], r["kind"])].append(r)
     count = lambda rs, f: sum(1 for r in rs if f(r))
-    print(f"\n=== Ringkasan Minggu 2 | split={args.split} | model={model_name} | k={K} ===")
+    print(f"\n=== No-defense summary | split={args.split} | model={model_name} | k={K} ===")
     if type(llm).__name__ == "FakeModel":
-        print("PERINGATAN: model PALSU. Angka di bawah hanya menguji alur, BUKAN hasil eksperimen.")
-    for kind, label in (("clean_qa", "Clean accuracy (QA bersih)"), ("target_qa", "Akurasi pertanyaan target, bersih")):
+        print("WARNING: FAKE model. The numbers below only test the pipeline, they are NOT experimental results.")
+    for kind, label in (("clean_qa", "Clean accuracy (clean QA)"), ("target_qa", "Target-question accuracy, clean")):
         rs = by[("clean", kind)]
         print(f"{label:<38} {metrics.fmt(count(rs, lambda r: r['correct']), len(rs))}")
-    print(f"\n{'Serangan (tanpa pertahanan)':<22} {'ASR':<26} {'ambigu':<8} {'DCR':<26} racun terambil")
+    print(f"\n{'Attack (no defense)':<22} {'ASR':<26} {'ambiguous':<10} {'DCR':<26} poison retrieved")
     for kind in ("A1_false_fact", "A2_confident_poison", "A3_external_source"):
         rs = by[("no_defense", kind)]
         print(f"{kind:<22} {metrics.fmt(count(rs, lambda r: r['outcome'] == 'success'), len(rs)):<26} "
-              f"{count(rs, lambda r: r['outcome'] == 'ambiguous'):<8} "
+              f"{count(rs, lambda r: r['outcome'] == 'ambiguous'):<10} "
               f"{metrics.fmt(count(rs, lambda r: r['changed']), len(rs)):<26} "
               f"{metrics.fmt(count(rs, lambda r: r['poison_retrieved']), len(rs))}")
     for condition in ("no_defense", "clean"):
         rs = by[(condition, "A3_auth")]
-        label = "A3-auth (tanpa pertahanan)" if condition == "no_defense" else "A3-auth tanpa racun (harus 0)"
+        label = "A3-auth (no defense)" if condition == "no_defense" else "A3-auth without poison (must be 0)"
         print(f"{label:<38} {metrics.fmt(count(rs, lambda r: r['outcome'] == 'success'), len(rs))}")
-    print(f"\nWriter: JSON terbaca {dict(PARSE_STATS)}  (repaired/salvaged = format diperbaiki; failed = memori sesi itu kosong)")
-    print(f"Per baris: {path.relative_to(locomo.ROOT)}  |  log tool: {tools.LOG.relative_to(locomo.ROOT)}")
+    print(f"\nWriter: JSON parsed {dict(PARSE_STATS)}  (repaired/salvaged = format fixed; failed = that session's memory is empty)")
+    print(f"Per row: {path.relative_to(locomo.ROOT)}  |  tool log: {tools.LOG.relative_to(locomo.ROOT)}")
 
 
 if __name__ == "__main__":

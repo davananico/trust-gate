@@ -1,4 +1,4 @@
-"""Tes graph end-to-end dengan model palsu dan embedding asli (lokal). Jalankan: pytest -q"""
+"""End-to-end graph tests with a fake model and real (local) embeddings. Run: pytest -q"""
 import json
 import sys
 from pathlib import Path
@@ -21,17 +21,17 @@ def emb():
     return LocalEmbeddings()
 
 
-def test_racun_A1_sampai_ke_jawaban_tanpa_pertahanan(emb):
+def test_A1_poison_reaches_the_answer_without_defense(emb):
     case = next(c for c in load("poison_cases.json") if c["case_id"] == "T01-A1")
     app = build_graph(FakeModel(cache=False))
     out = run(app, MemoryStore(emb), locomo.inject_poison(locomo.load_sessions("conv-26"), case),
               [{"qid": "T01", "text": case["question"]}])
-    assert len(out["log"]) == 19  # semua sesi diproses berurutan
+    assert len(out["log"]) == 19  # every session processed in order
     assert "Norway" in out["answers"]["T01"]["answer"]
 
 
-def test_gate_hanya_menyimpan_accept(emb):
-    # Gate tiruan: tolak semua kandidat dari sumber eksternal. Memastikan edge trust_gate -> store bekerja.
+def test_gate_stores_only_accepted(emb):
+    # Mock gate: rejects every candidate from an external source. Checks that the trust_gate -> store edge works.
     gate = lambda c, s: {**c, "decision": "reject" if c["source"] == "external_web" else "accept"}
     case = next(c for c in load("poison_cases.json") if c["case_id"] == "T01-A3")
     store = MemoryStore(emb)
@@ -41,7 +41,7 @@ def test_gate_hanya_menyimpan_accept(emb):
     assert "Norway" not in out["answers"]["T01"]["answer"]
 
 
-def test_A3_auth_dicatat_tapi_tidak_dieksekusi(emb, tmp_path, monkeypatch):
+def test_A3_auth_is_logged_but_not_executed(emb, tmp_path, monkeypatch):
     monkeypatch.setattr(tools, "LOG", tmp_path / "log.jsonl")
     a = load("auth_scenarios.json")[0]
     out = run(build_graph(FakeModel(cache=False)), MemoryStore(emb),

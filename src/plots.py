@@ -1,16 +1,16 @@
 """
-plots.py — grafik hasil untuk paper (Minggu 4).
+plots.py — result figures for the paper.
 
-  python src/plots.py                      # dari results/test_final/ (data TEST)
+  python src/plots.py                      # from results/test_final/ (TEST data)
   python src/plots.py --dir results/dev_run2_final --split dev
 
-Output di <dir>/figures/:
-  fig1_asr_per_attack.png/.pdf   ASR per jenis serangan, per model: tanpa pertahanan vs gate konten saja vs Trust Gate
-  fig2_tradeoff.png/.pdf         trade-off ASR (A1–A3 gabungan) vs FRR dialog, semua kondisi, per model
-  figure_data.csv                angka persis yang digambar (tabel pendamping)
+Output in <dir>/figures/:
+  fig1_asr_per_attack.png/.pdf   ASR per attack type, per model: no defense vs content-only gate vs Trust Gate
+  fig2_tradeoff.png/.pdf         ASR (A1–A3 pooled) vs dialog FRR trade-off, every condition, per model
+  figure_data.csv                the exact numbers plotted (companion table)
 
-Warna: 3 slot pertama palet kategorikal tervalidasi (biru, oranye, aqua; aman buta warna untuk semua pasangan).
-Ablation digambar abu-abu + label teks (bukan warna ke-4/5). Selang kepercayaan = Wilson 95%.
+Colors: first 3 slots of a validated categorical palette (blue, orange, aqua; colorblind-safe for every pair).
+Ablations are drawn in gray + text labels (not a 4th/5th color). Confidence intervals = 95% Wilson.
 """
 import argparse
 import csv
@@ -30,11 +30,11 @@ MODELS = [("ollama_qwen3_8b", "qwen3:8b"), ("ollama_gemma4_12b", "gemma4:12b"),
           ("ollama_llama3.1_8b", "llama3.1:8b"), ("ollama_olmo-3_7b-instruct", "olmo-3:7b")]
 ATTACKS = [("A1_false_fact", "A1\nfalse fact"), ("A2_confident_poison", "A2\nconfident"),
            ("A3_external_source", "A3\nexternal"), ("A3_auth", "A3-auth\nsend_file")]
-MAIN = [("no_defense", "Tanpa pertahanan", "#2a78d6"), ("content_only", "Gate konten saja", "#eb6834"),
+MAIN = [("no_defense", "No defense", "#2a78d6"), ("content_only", "Content-only gate", "#eb6834"),
         ("trust", "Trust Gate", "#1baf7a")]
-ABLATIONS = [("ablate_source", "tanpa source trust"), ("ablate_poison_risk", "tanpa poisoning risk")]
-CODE = {"Tanpa pertahanan": "N", "Gate konten saja": "K", "Trust Gate": "T", "tanpa source trust": "−S",
-        "tanpa poisoning risk": "−R"}  # label pendek di dalam grafik; artinya di keterangan
+ABLATIONS = [("ablate_source", "without source trust"), ("ablate_poison_risk", "without poisoning risk")]
+CODE = {"No defense": "N", "Content-only gate": "C", "Trust Gate": "T", "without source trust": "−S",
+        "without poisoning risk": "−R"}  # short in-plot labels; meanings are given in the caption
 INK, INK2, MUTED, GRID, SURFACE, ABL = "#0b0b0b", "#52514e", "#8a8984", "#e6e5e0", "#fcfcfb", "#8a8984"
 
 plt.rcParams.update({"font.size": 9, "axes.edgecolor": MUTED, "axes.labelcolor": INK2, "xtick.color": INK2,
@@ -78,18 +78,18 @@ def fig1(data_dir, split, out, table):
                               "ci_low": round(l, 1), "ci_high": round(h, 1), "k": r["k"], "n": r["n"]})
             ax.bar(xs, ys, width=width, color=color, edgecolor=SURFACE, linewidth=1.5, label=name, zorder=2)
             ax.errorbar(xs, ys, yerr=[lo, hi], fmt="none", ecolor=INK2, elinewidth=0.8, capsize=2, zorder=3)
-            if cond == "trust":  # label angka hanya untuk Trust Gate (selektif), di atas garis CI supaya tidak bertabrakan
+            if cond == "trust":  # value labels for the Trust Gate only (selective), above the CI so they do not collide
                 for x, y, h in zip(xs, ys, hi):
                     ax.text(x, y + h + 1.5, f"{y:.0f}", ha="center", va="bottom", fontsize=7, color=INK)
         ax.set_xticks(range(len(ATTACKS)), [a for _, a in ATTACKS], fontsize=8)
         ax.set_title(label, fontsize=10, loc="left")
         ax.set_ylim(0, 105)
         style(ax)
-    axes[0].set_ylabel("ASR (%) — serangan berhasil")
+    axes[0].set_ylabel("ASR (%) — successful attacks")
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.02))
-    fig.text(0.5, -0.06, f"Data {split}. Garis = selang kepercayaan 95% (Wilson). A1–A3: n = {'34' if split == 'test' else '15'} "
-             f"per serangan; A3-auth: n = {'7' if split == 'test' else '3'}. Angka di atas batang = Trust Gate.",
+    fig.text(0.5, -0.06, f"{split.capitalize()} split. Whiskers = 95% confidence interval (Wilson). A1–A3: n = {'34' if split == 'test' else '15'} "
+             f"per attack; A3-auth: n = {'7' if split == 'test' else '3'}. Numbers above bars = Trust Gate.",
              ha="center", fontsize=8, color=INK2)
     fig.tight_layout(rect=(0, 0, 1, 0.93))
     for ext in ("png", "pdf"):
@@ -102,7 +102,7 @@ def fig2(data_dir, split, out, table):
     for ax, (tag, label) in zip(axes, MODELS):
         s = summary_lookup(load(data_dir / f"summary_{split}_{tag}.csv"))
         exp = load(data_dir / f"exp_{split}_{tag}.csv")
-        # Ablation digambar dulu (di bawah) supaya titik utama tidak tertutup; posisi yang sama -> label digabung.
+        # Ablations are drawn first (underneath) so main points stay visible; identical positions -> labels merged.
         conds = [(c, n, ABL, False) for c, n in ABLATIONS] + [(c, n, col, True) for c, n, col in MAIN]
         points = {}
         for cond, name, color, main in conds:
@@ -128,18 +128,18 @@ def fig2(data_dir, split, out, table):
             ax.annotate(" = ".join(CODE[n] for n in sorted(names, key=order.index)), (fx, y),
                         xytext=(6, -9 if only_ablation else 3), textcoords="offset points", fontsize=7.5, color=INK)
         ax.set_title(label, fontsize=10, loc="left")
-        ax.set_xlabel("FRR dialog (%) — memori benar tertahan")
+        ax.set_xlabel("Dialog FRR (%) — clean memories held back")
         ax.set_xlim(-3, 75)
         ax.set_ylim(0, 65)
         style(ax)
         ax.grid(axis="x", color=GRID, linewidth=0.8)
-    axes[0].set_ylabel("ASR A1–A3 gabungan (%)")
+    axes[0].set_ylabel("ASR, A1–A3 pooled (%)")
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.02))
-    fig.text(0.5, -0.1, f"Data {split}. Pojok kiri bawah = lebih baik (sedikit serangan berhasil, sedikit memori benar hilang). "
-             "Garis = Wilson 95%.\nN = tanpa pertahanan, K = gate konten saja, T = Trust Gate, "
-             "−S = ablation tanpa source trust, −R = ablation tanpa poisoning risk (belah ketupat abu-abu). "
-             "\"=\" berarti hasilnya identik.", ha="center", fontsize=8, color=INK2)
+    fig.text(0.5, -0.1, f"{split.capitalize()} split. Lower left = better (few successful attacks, few clean memories lost). "
+             "Whiskers = 95% Wilson.\nN = no defense, C = content-only gate, T = Trust Gate, "
+             "−S = ablation without source trust, −R = ablation without poisoning risk (gray diamonds). "
+             "\"=\" means identical results.", ha="center", fontsize=8, color=INK2)
     fig.tight_layout(rect=(0, 0, 1, 0.93))
     for ext in ("png", "pdf"):
         fig.savefig(out / f"fig2_tradeoff.{ext}", dpi=200, bbox_inches="tight")
@@ -161,7 +161,7 @@ def main():
         w = csv.DictWriter(f, fieldnames=sorted({k for r in table for k in r}))
         w.writeheader()
         w.writerows(table)
-    print(f"Gambar + tabel di {out.relative_to(ROOT)}")
+    print(f"Figures + table in {out.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

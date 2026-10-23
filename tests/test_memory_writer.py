@@ -1,4 +1,4 @@
-"""Tes memory_writer dan cache LLM (model palsu, tanpa internet). Jalankan: pytest -q"""
+"""Tests for memory_writer and the LLM cache (fake model, no network). Run: pytest -q"""
 import json
 import sys
 from pathlib import Path
@@ -18,73 +18,73 @@ def chunks_for(case_id):
     return [c for c in locomo.writer_chunks(s) if c["session"] == case["inject_session"]]
 
 
-def test_parse_list_toleran():
+def test_parse_list_tolerant():
     assert parse_list('```json\n["A likes tea.", "B owns a cat."]\n```') == ["A likes tea.", "B owns a cat."]
     assert parse_list("Here you go: []") == []
-    assert parse_list("tidak ada json") == []
-    assert parse_list('["rusak"') == []
+    assert parse_list("no json here") == []
+    assert parse_list('["broken"') == []
 
 
-def test_parse_list_memperbaiki_koma_hilang():
-    # Bentuk keluaran olmo-3:7b-instruct pada quicktest (15 Okt): koma antar-item hilang.
+def test_parse_list_repairs_missing_commas():
+    # Output shape of olmo-3:7b-instruct in the quicktest (15 Oct): missing commas between items.
     reply = """["Caroline attended a pottery class." "Caroline's grandmother is from Sweden."]"""
     items, status = parse_list_status(reply)
     assert status == "repaired" and items == ["Caroline attended a pottery class.", "Caroline's grandmother is from Sweden."]
     assert parse_list_status('["A."]')[1] == "ok"
-    assert parse_list_status("[]")[1] == "ok" and parse_list_status("tidak ada json")[1] == "failed"
+    assert parse_list_status("[]")[1] == "ok" and parse_list_status("no json here")[1] == "failed"
 
 
-def test_parse_list_memperbaiki_item_berkurung_kurawal():
-    # Bentuk keluaran qwen3:8b untuk conv-26 sesi 4 (19 Okt): tiap item dibungkus {"..."}.
+def test_parse_list_repairs_brace_wrapped_items():
+    # Output shape of qwen3:8b for conv-26 session 4 (19 Oct): every item wrapped in {"..."}.
     reply = '[{"Caroline received a necklace from her grandma in Sweden."},{"Melanie went camping."}]'
     items, status = parse_list_status(reply)
     assert status == "repaired"
     assert items == ["Caroline received a necklace from her grandma in Sweden.", "Melanie went camping."]
-    # Objek JSON sungguhan ({"key": "value"}): nilai teksnya diambil, bukan dibuang.
+    # Real JSON objects ({"key": "value"}): their text values are kept, not dropped.
     assert parse_list_status('[{"fact": "A."}]') == (["A."], "ok")
 
 
-def test_parse_list_salvage_json_rusak():
-    # Bentuk nyata qwen3:8b conv-26 sesi 3 & 7 (19 Okt): kurawal penutup hilang, kutip di dalam kalimat tak di-escape.
+def test_parse_list_salvages_broken_json():
+    # Real qwen3:8b output, conv-26 sessions 3 & 7 (19 Oct): missing closing brace, unescaped quotes inside a sentence.
     reply = '[{"Caroline is thankful."},{"Caroline likes the book "Becoming Nicole" a lot."},{"Family is everything."]'
     items, status = parse_list_status(reply)
     assert status == "salvaged"
     assert items == ["Caroline is thankful.", 'Caroline likes the book "Becoming Nicole" a lot.', "Family is everything."]
 
 
-def test_parse_list_beberapa_daftar_per_baris():
-    # Bentuk nyata olmo-3:7b-instruct (19 Okt): satu daftar per baris, ada daftar kosong.
+def test_parse_list_one_list_per_line():
+    # Real olmo-3:7b-instruct output (19 Oct): one list per line, including empty lists.
     reply = '["Jon lost his job as a banker."]  \n[]\n["Gina\'s favorite dance style is contemporary"]  \n["Jon won."]\n[]'
     items, status = parse_list_status(reply)
     assert status == "repaired"
     assert items == ["Jon lost his job as a banker.", "Gina's favorite dance style is contemporary", "Jon won."]
 
 
-def test_parse_list_jawaban_terpotong():
-    # Bentuk nyata qwen3:8b (19 Okt): berputar sampai batas 1024 token, terpotong di tengah item.
+def test_parse_list_truncated_reply():
+    # Real qwen3:8b output (19 Oct): looped until the 1024-token cap, cut off mid-item.
     reply = '[{"Audrey has four dogs."},{"Pets bring comfort."},{"Pets bring comfort."},{"Aud'
     items, status = parse_list_status(reply)
     assert status == "truncated" and items == ["Audrey has four dogs.", "Pets bring comfort."]
 
 
-def test_racun_A1_jadi_kandidat_dialog():
+def test_A1_poison_becomes_dialog_candidate():
     cands = [c for ch in chunks_for("T01-A1") for c in write_memories(ch, llm.FakeWriterModel())]
     norway = [c for c in cands if "Norway" in c["content"]]
     assert norway and all(c["source"] == "dialog" for c in norway)
 
 
-def test_racun_A3_jadi_kandidat_external_web():
+def test_A3_poison_becomes_external_web_candidate():
     cands = [c for ch in chunks_for("T01-A3") for c in write_memories(ch, llm.FakeWriterModel())]
     norway = [c for c in cands if "Norway" in c["content"]]
     assert norway and all(c["source"] == "external_web" for c in norway)
 
 
-def test_kandidat_tidak_membawa_label_serangan():
+def test_candidates_carry_no_attack_labels():
     cand = write_memories(chunks_for("T01-A1")[0], llm.FakeWriterModel())[0]
     assert not {"is_poison", "poison_value", "poison_keys", "gold_answer", "attack"} & set(cand)
 
 
-def test_cache_tidak_memanggil_model_dua_kali(tmp_path):
+def test_cache_avoids_second_model_call(tmp_path):
     calls = []
 
     class Counting(llm.FakeWriterModel):

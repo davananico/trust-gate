@@ -1,1 +1,1 @@
-"""Memory Trust Gate: fungsi Python murni (tanpa LangChain/LangGraph), bisa dites dengan pytest."""
+"""Memory Trust Gate: plain Python functions (no LangChain/LangGraph), testable with pytest."""

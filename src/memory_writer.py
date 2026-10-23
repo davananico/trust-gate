@@ -1,14 +1,14 @@
 """
-memory_writer.py — Minggu 2: mengubah satu chunk (dari locomo.writer_chunks) menjadi kandidat memori.
+memory_writer.py — turns one chunk (from locomo.writer_chunks) into memory candidates.
 
-Kandidat memori = fakta pendek + metadata asal-usul. Kandidat BELUM disimpan: berikutnya ia lewat
-trust_gate (atau langsung ke store pada kondisi tanpa pertahanan).
+Memory candidate = a short fact + provenance metadata. Candidates are NOT stored yet: next they pass through
+trust_gate (or go straight to the store in the no-defense condition).
 
-Metadata yang ikut: source dan timestamp (dari chunk, bukan dari LLM), chunk_id (untuk mengambil teks
-sumber saat gate menilai content confidence). Label serangan (is_poison dll.) TIDAK ada di sini;
-label diberikan terpisah saat evaluasi.
+Metadata carried along: source and timestamp (from the chunk, not from the LLM), chunk_id (to fetch the source
+text when the gate scores content confidence). Attack labels (is_poison etc.) are NOT present here;
+labels are attached separately at evaluation time.
 
-Uji cepat (model palsu): python src/memory_writer.py
+Quick check (fake model): python src/memory_writer.py
 """
 import json
 import re
@@ -19,23 +19,23 @@ from llm import load_prompt
 PROMPT = load_prompt("memory_writer")
 
 
-# Berapa kali jawaban writer terbaca: "ok", "repaired", "salvaged", "truncated", "failed" (= memori sesi itu kosong). Dilaporkan per model.
+# How writer replies were parsed: "ok", "repaired", "salvaged", "truncated", "failed" (= that session's memory is empty). Reported per model.
 PARSE_STATS = Counter()
 
 
 def parse_list_status(reply):
-    """Ambil JSON list of string dari jawaban LLM -> (items, status).
+    """Extract a JSON list of strings from an LLM reply -> (items, status).
 
-    Toleran terhadap ```json ... ``` dan teks di sekitarnya. Dua kerusakan format yang terlihat pada model nyata
-    diperbaiki (isi tidak diubah, status = "repaired"):
-      - koma antar-item hilang: ["A." "B."]            (olmo-3, quicktest 15 Okt)
-      - tiap item dibungkus kurung kurawal: [{"A."}, {"B."}]  (qwen3:8b, 8 dari 19 sesi conv-26, 19 Okt)
-      - satu daftar per baris: ["A."]\n["B."]\n[]           (olmo-3, 19 Okt; dulu tergabung jadi 1 catatan raksasa)
+    Tolerates ```json ... ``` and surrounding text. Format errors seen in real models are repaired
+    (content is not changed, status = "repaired"):
+      - missing commas between items: ["A." "B."]              (olmo-3, quicktest 15 Oct)
+      - each item wrapped in curly braces: [{"A."}, {"B."}]   (qwen3:8b, 8 of 19 sessions of conv-26, 19 Oct)
+      - one list per line: ["A."]\n["B."]\n[]                  (olmo-3, 19 Oct; previously merged into 1 giant memory)
     """
     m = re.search(r"\[.*\]", reply, re.S)
     if not m and reply.lstrip().startswith("[") and '"' in reply:
-        # Jawaban terpotong (model berputar sampai batas NUM_PREDICT, mis. qwen3): ambil item yang sudah lengkap,
-        # buang sisa yang terpotong, tutup daftarnya, dan hapus duplikat persis hasil putaran.
+        # Truncated reply (model looped until the NUM_PREDICT cap, e.g. qwen3): keep the complete items,
+        # drop the cut-off tail, close the list, and remove exact duplicates produced by the loop.
         cut = max(reply.rfind('"}'), reply.rfind('",'))
         if cut > 0:
             items, _ = parse_list_status(reply[:cut + (2 if reply[cut:cut + 2] == '"}' else 1)] + "]")
@@ -46,7 +46,7 @@ def parse_list_status(reply):
     repaired = re.sub(r'\{\s*("(?:[^"\\]|\\.)*")\s*\}', r"\1", text)  # {"A."} -> "A."
     repaired = re.sub(r'"\s*\n?\s*"', '", "', repaired)                 # "A." "B." -> "A.", "B."
     repaired = re.sub(r"\]\s*\[", ", ", repaired)                      # ["A."]\n["B."] -> ["A.", "B."]  (olmo-3)
-    repaired = re.sub(r",\s*(?=,|\])", "", repaired)                    # sisa koma dari daftar kosong []
+    repaired = re.sub(r",\s*(?=,|\])", "", repaired)                    # leftover commas from empty lists []
     repaired = re.sub(r"\[\s*,", "[", repaired)
     for status, candidate in (("ok", text), ("repaired", repaired)):
         try:
@@ -54,12 +54,12 @@ def parse_list_status(reply):
         except json.JSONDecodeError:
             continue
         if isinstance(items, list):
-            # Item berupa objek ({"fact": "A."}) -> ambil nilai teksnya, supaya catatan tidak terbuang diam-diam.
+            # Items that are objects ({"fact": "A."}) -> take their text values, so no memory is silently dropped.
             flat = [v for it in items for v in ([it] if isinstance(it, str) else
                                                  [x for x in it.values() if isinstance(x, str)] if isinstance(it, dict) else [])]
             return [x.strip() for x in flat if x.strip()], status
-    # Cadangan terakhir ("salvaged"): JSON tetap rusak (mis. kurung kurawal penutup hilang, atau tanda kutip
-    # di dalam kalimat tidak di-escape: "... the book "Becoming Nicole" ..."). Potong di batas antar-item.
+    # Last resort ("salvaged"): the JSON is still broken (e.g. a missing closing brace, or unescaped quotes
+    # inside a sentence: "... the book "Becoming Nicole" ..."). Split at item boundaries.
     inner = re.sub(r'^\[\s*\{?\s*"|"\s*\}?\s*\]$', "", text.strip())
     if inner != text.strip():
         items = [x.strip() for x in re.split(r'"\s*\}?\s*,\s*\{?\s*"', inner) if x.strip()]
@@ -73,7 +73,7 @@ def parse_list(reply):
 
 
 def write_memories(chunk, llm):
-    """Satu chunk -> list kandidat memori (dict)."""
+    """One chunk -> list of memory candidates (dicts)."""
     reply = llm.invoke(PROMPT.format(date=chunk["date"], text=chunk["text"])).content
     facts, status = parse_list_status(reply)
     PARSE_STATS[status] += 1
@@ -100,6 +100,6 @@ if __name__ == "__main__":
         if chunk["session"] != case["inject_session"]:
             continue
         cands = write_memories(chunk, llm)
-        print(f"\n{chunk['chunk_id']} (source={chunk['source']}): {len(cands)} kandidat")
+        print(f"\n{chunk['chunk_id']} (source={chunk['source']}): {len(cands)} candidates")
         for c in cands[-3:]:
             print(f"  [{c['source']}] {c['content'][:100]}")

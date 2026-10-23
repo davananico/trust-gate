@@ -1,13 +1,13 @@
 """
-llm.py — satu tempat untuk memilih model LLM dan mengaktifkan cache.
+llm.py — one place to choose the LLM and enable the cache.
 
-Model dipilih dari variabel LLM_MODEL di .env, format "provider:nama-model":
-  fake                  -> model palsu deterministik (tanpa internet), untuk mengetes alur
-  openai:gpt-4o-mini    -> OpenAI (butuh OPENAI_API_KEY)
-  ollama:<nama-model>   -> model lokal di server lab (butuh paket langchain-ollama; dipasang nanti)
+The model is chosen via the LLM_MODEL variable in .env, format "provider:model-name":
+  fake                  -> deterministic fake model (no network), for testing the pipeline
+  openai:gpt-4o-mini    -> OpenAI (needs OPENAI_API_KEY)
+  ollama:<model-name>   -> local model on the lab server (needs the langchain-ollama package)
 
-Cache: setiap pasangan (prompt, model) disimpan di cache/llm_cache.sqlite. Panggilan yang sama persis
-tidak memanggil model lagi -> lebih cepat, lebih murah, dan hasil bisa diulang persis.
+Cache: every (prompt, model) pair is stored in cache/llm_cache.sqlite. An identical call does not hit the model
+again -> faster, cheaper, and exactly repeatable.
 """
 import json
 import os
@@ -29,12 +29,12 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 CACHE_ALLOWED = [ChatGeneration, Generation, AIMessage]
 NUM_CTX = 8192
-NUM_PREDICT = 1024  # batas panjang jawaban; jawaban writer normal <= ~480 token (qwen3 sempat berputar sampai 81.920 token)
+NUM_PREDICT = 1024  # reply length cap; normal writer replies are <= ~480 tokens (qwen3 once looped up to 81,920 tokens)
 SEED = 2026
 
 
 class SQLiteLLMCache(BaseCache):
-    """Cache LangChain sederhana di atas sqlite3 bawaan Python."""
+    """A simple LangChain cache on top of Python's built-in sqlite3."""
 
     def __init__(self, path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -48,7 +48,7 @@ class SQLiteLLMCache(BaseCache):
             return None
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", LangChainBetaWarning)
-            # Hanya objek jawaban LLM yang boleh dihidupkan kembali dari cache (bukan objek model/konfigurasi).
+            # Only LLM reply objects may be revived from the cache (never model/config objects).
             return loads(row[0], allowed_objects=CACHE_ALLOWED)
 
     def update(self, prompt, llm_string, return_val):
@@ -61,12 +61,12 @@ class SQLiteLLMCache(BaseCache):
 
 
 class FakeModel(BaseChatModel):
-    """Model palsu deterministik untuk mengetes ALUR tanpa LLM. Angka hasilnya tidak bermakna ilmiah.
+    """Deterministic fake model for testing the PIPELINE without an LLM. Its numbers have no scientific meaning.
 
-    Perilaku menurut jenis prompt:
-      writer (<text>...</text>)        -> setiap baris >= 4 kata jadi satu memori (writer paling naif)
-      agen QA (<memories> + Question:) -> menjawab dengan isi memori PERTAMA (peringkat 1 retrieval)
-      agen tool (User request:)        -> jika ada memori "... to <domain>.example", memanggil send_file ke domain itu
+    Behavior by prompt type:
+      writer (<text>...</text>)          -> every line with >= 4 words becomes one memory (the most naive writer)
+      QA agent (<memories> + Question:)  -> answers with the FIRST memory (retrieval rank 1)
+      tool agent (User request:)         -> if a memory says "... to <domain>.example", calls send_file to that domain
     """
 
     def _generate(self, messages, stop=None, run_manager=None, **kwargs):
@@ -76,7 +76,7 @@ class FakeModel(BaseChatModel):
         mem = re.search(r"<memories>\n(.*?)\n</memories>", prompt, re.S)
         if "<source>" in prompt:          # gate: content confidence
             content = "9"
-        elif "<existing>" in prompt:      # gate: cek kontradiksi
+        elif "<existing>" in prompt:      # gate: contradiction check
             content = "NO"
         elif writer:
             content = json.dumps([ln.strip() for ln in writer.group(1).splitlines() if len(ln.split()) >= 4])
@@ -95,21 +95,21 @@ class FakeModel(BaseChatModel):
         return ChatResult(generations=[ChatGeneration(message=msg)])
 
     def bind_tools(self, tools, **kwargs):
-        return self  # model palsu sudah "tahu" tool send_file
+        return self  # the fake model already "knows" the send_file tool
 
     @property
     def _llm_type(self):
         return "fake"
 
 
-FakeWriterModel = FakeModel  # nama lama
+FakeWriterModel = FakeModel  # old name
 
 
 def _keyed_ollama():
-    """ChatOllama yang kunci cache-nya memuat NAMA MODEL dan pengaturannya.
+    """ChatOllama whose cache key includes the MODEL NAME and its settings.
 
-    Bawaan langchain-ollama 1.1.0, kunci cache hanya "chat-ollama" -> semua model berbagi cache: jawaban qwen3
-    dipakai untuk llama/olmo/gemma tanpa peringatan (ketahuan 19 Okt). Jangan dihapus.
+    In langchain-ollama 1.1.0 the default cache key is just "chat-ollama" -> all models share one cache: qwen3's
+    answers were silently reused for llama/olmo/gemma (found 19 Oct). Do not remove.
     """
     from langchain_ollama import ChatOllama
 
@@ -122,17 +122,17 @@ def _keyed_ollama():
 
 
 def get_chat_model(name=None):
-    """Kembalikan chat model sesuai LLM_MODEL. Temperature 0 supaya jawaban tidak acak."""
+    """Returns the chat model for LLM_MODEL. Temperature 0 so answers are not random."""
     name = name or os.getenv("LLM_MODEL", "fake")
     if name == "fake" or (name.startswith("openai:") and not os.getenv("OPENAI_API_KEY", "").startswith("sk-")):
         if name != "fake":
-            print(f"[llm] {name} butuh OPENAI_API_KEY yang valid -> pakai model palsu")
-        return FakeModel(cache=False)  # model palsu tidak di-cache: kodenya bisa berubah, kunci cache tidak
+            print(f"[llm] {name} needs a valid OPENAI_API_KEY -> using the fake model")
+        return FakeModel(cache=False)  # the fake model is not cached: its code may change, the cache key would not
     if name.startswith("ollama:"):
-        # reasoning=False: mode "thinking" (qwen3, gemma4) dimatikan untuk SEMUA model, supaya cepat dan setara.
-        # Alamat server: OLLAMA_HOST (default localhost:11434 = lewat terowongan SSH ke server lab).
-        # num_ctx=8192 untuk SEMUA model: default Ollama 4096 dan teks yang lebih panjang dipotong DIAM-DIAM.
-        # (Prompt writer terpanjang ~1.500 token, jadi 8192 memberi ruang aman.)
+        # reasoning=False: "thinking" mode (qwen3, gemma4) is turned off for ALL models, for speed and parity.
+        # Server address: OLLAMA_HOST (default localhost:11434 = the lab server, directly or via an SSH tunnel).
+        # num_ctx=8192 for ALL models: Ollama's default is 4096 and longer input is truncated SILENTLY.
+        # (The longest writer prompt is ~1,500 tokens, so 8192 leaves a safe margin.)
         return _keyed_ollama()(model=name.split(":", 1)[1], temperature=0, reasoning=False, num_ctx=NUM_CTX,
                                num_predict=NUM_PREDICT, seed=SEED,
                                base_url=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"))

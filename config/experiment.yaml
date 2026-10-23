@@ -1,20 +1,20 @@
-# Pengaturan eksperimen (dibaca run_experiment.py). Pengaturan yang DIKUNCI ada di kode dan dicatat di sini sebagai rujukan.
+# Experiment settings (read by run_experiment.py). LOCKED settings live in the code and are listed here for reference.
 models:
   - ollama:qwen3:8b
   - ollama:llama3.1:8b
   - ollama:gemma4:12b
   - ollama:olmo-3:7b-instruct
 
-# Varian gate. Threshold diambil dari config/gate_thresholds.yaml (dipilih di dev oleh src/tune_gate.py).
-#   threshold_from: bagian threshold yang dipakai ("trust" atau "content_only")
+# Gate variants. Thresholds come from config/gate_thresholds.yaml (chosen on dev by src/tune_gate.py).
+#   threshold_from: which threshold section to use ("trust" or "content_only")
 gate_variants:
   trust:              {mode: trust,        threshold_from: trust}
   content_only:       {mode: content_only, threshold_from: content_only}
   ablate_source:      {mode: trust,        threshold_from: trust, use_source_trust: false}
   ablate_poison_risk: {mode: trust,        threshold_from: trust, use_poison_risk: false}
 
-# Rujukan (dikunci di kode, bukan dibaca dari sini):
+# Reference (locked in the code, not read from here):
 #   retrieval: BAAI/bge-small-en-v1.5, cosine, k = 10         (src/memory_store.py)
 #   LLM: temperature 0, num_ctx 8192, num_predict 1024, seed 2026, thinking off   (src/llm.py)
-#   source trust + pola: config/source_trust.yaml (dibekukan 19 Okt)
-#   prompt: prompts/ (riwayat di docs/prompt_log.md)
+#   source trust + patterns: config/source_trust.yaml (frozen 19 Oct)
+#   prompts: prompts/ (history in docs/prompt_log.md)

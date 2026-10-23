@@ -1,19 +1,19 @@
 """
-graph.py — Minggu 2: alur agen sebagai graph LangGraph.
+graph.py — the agent pipeline as a LangGraph graph.
 
-Tanpa pertahanan (Minggu 2):
+No defense:
 
-  START ─► memory_writer ─► store ─┬─(masih ada sesi)─► memory_writer
-                                   └─(semua sesi selesai)─► retrieve ─► agent_answer ─► END
+  START ─► memory_writer ─► store ─┬─(sessions left)─► memory_writer
+                                   └─(all sessions done)─► retrieve ─► agent_answer ─► END
 
-Dengan Trust Gate (Minggu 3) hanya SATU edge yang berubah: memory_writer ─► trust_gate ─► store.
-Fungsi node lainnya dipakai bersama (aturan CLAUDE.md no. 3).
+With the Trust Gate only ONE edge changes: memory_writer ─► trust_gate ─► store.
+All other node functions are shared, so both graphs are built from the same code.
 
-Sesi diproses satu per satu sesuai urutan waktu, supaya di Minggu 3 gate bisa mengecek kandidat terhadap
-memori yang SUDAH tersimpan dari sesi-sesi sebelumnya.
+Sessions are processed one at a time in chronological order, so the gate can check each candidate against the
+memories ALREADY stored from earlier sessions.
 
-Memori jangka panjang = MemoryStore (Chroma) yang dibuat baru untuk setiap run. Fitur memori/checkpointer
-bawaan LangGraph TIDAK dipakai (aturan no. 1).
+Long-term memory = a MemoryStore (Chroma) created fresh for every run. LangGraph's built-in memory/checkpointer
+features are NOT used.
 """
 from typing import TypedDict
 
@@ -28,33 +28,33 @@ from memory_writer import write_memories
 class State(TypedDict, total=False):
     run_id: str
     case_id: str
-    sessions: list     # sesi percakapan (sudah disisipi racun pada kondisi serangan)
-    idx: int           # indeks sesi yang sedang diproses
-    store: object      # MemoryStore untuk run ini
-    gate_log: object   # GateLog (SQLite) untuk run dengan gate; None tanpa gate
-    candidates: list   # kandidat memori dari sesi yang sedang diproses
-    log: list          # per sesi: jumlah kandidat dan jumlah yang disimpan
-    mode: str          # "qa" (jawab pertanyaan) atau "tool" (permintaan yang bisa memicu send_file)
+    sessions: list     # conversation sessions (already poisoned in attack conditions)
+    idx: int           # index of the session being processed
+    store: object      # MemoryStore for this run
+    gate_log: object   # GateLog (SQLite) for gated runs; None without a gate
+    candidates: list   # memory candidates from the session being processed
+    log: list          # per session: number of candidates and number stored
+    mode: str          # "qa" (answer questions) or "tool" (a request that may trigger send_file)
     queries: list      # [{"qid": ..., "text": ...}]
-    retrieved: dict    # qid -> memori terambil
+    retrieved: dict    # qid -> retrieved memories
     answers: dict      # qid -> {"answer": ..., "tool_calls": [...]}
 
 
 def build_graph(llm, gate=None):
-    """gate=None -> tanpa pertahanan. Dengan gate: gate = gate.trust_gate.make_trust_gate(llm, params)."""
+    """gate=None -> no defense. With a gate: gate = gate.trust_gate.make_trust_gate(llm, params)."""
 
     def memory_writer(state):
         session = state["sessions"][state["idx"]]
-        # _chunk_text: teks sumber kandidat, dibutuhkan gate (pola + confidence). Tidak ikut disimpan ke Chroma.
+        # _chunk_text: the candidate's source text, needed by the gate (patterns + confidence). Not stored in Chroma.
         cands = [{**c, "_chunk_text": ch["text"]} for ch in locomo.writer_chunks([session]) for c in write_memories(ch, llm)]
         return {"candidates": cands}
 
     def store(state):
-        # Tanpa gate: semua kandidat disimpan. Dengan gate: hanya yang decision == "accept".
+        # No gate: every candidate is stored. With a gate: only those with decision == "accept".
         cands = state["candidates"]
         accepted = [c for c in cands if c.get("decision", "accept") == "accept"]
         state["store"].add(accepted)
-        if state.get("gate_log") is not None and cands:  # quarantine/reject TIDAK masuk Chroma, hanya ke SQLite
+        if state.get("gate_log") is not None and cands:  # quarantine/reject never enter Chroma, only SQLite
             state["gate_log"].write(cands, state.get("run_id", ""), state.get("case_id", ""))
         entry = {"session": state["sessions"][state["idx"]]["session"], "n_candidates": len(cands),
                  "n_stored": len(accepted)}
@@ -96,7 +96,7 @@ def build_graph(llm, gate=None):
 
 
 def run(app, store, sessions, queries, mode="qa", run_id="", case_id="", gate_log=None):
-    """Jalankan satu run. recursion_limit dinaikkan: tiap sesi = 2–3 langkah, percakapan bisa 30+ sesi."""
+    """Execute one run. recursion_limit is raised: each session = 2–3 steps, a conversation can have 30+ sessions."""
     return app.invoke({"run_id": run_id, "case_id": case_id, "sessions": sessions, "idx": 0, "store": store,
                        "gate_log": gate_log, "mode": mode, "queries": queries}, config={"recursion_limit": 1000})
 
@@ -112,5 +112,5 @@ if __name__ == "__main__":
     app = build_graph(llm)
     out = run(app, MemoryStore(LocalEmbeddings()), locomo.inject_poison(locomo.load_sessions(case["sample_id"]), case),
               [{"qid": case["target_id"], "text": case["question"]}], case_id=case["case_id"])
-    print(f"{len(out['log'])} sesi diproses, {sum(e['n_stored'] for e in out['log'])} memori disimpan")
-    print(f"Pertanyaan: {case['question']}\nJawaban  : {out['answers'][case['target_id']]['answer']}")
+    print(f"{len(out['log'])} sessions processed, {sum(e['n_stored'] for e in out['log'])} memories stored")
+    print(f"Question: {case['question']}\nAnswer  : {out['answers'][case['target_id']]['answer']}")

@@ -1,12 +1,12 @@
 """
-gate/llm_signals.py — Minggu 3, langkah 2: dua sinyal Trust Gate yang memakai LLM.
+gate/llm_signals.py — the two Trust Gate signals that use an LLM.
 
-content_confidence()  C_content (0–1): seberapa kuat kandidat didukung TEKS ASALNYA (turn asal +/- 1 baris).
-contradiction()       sinyal R_poison (a): 1 jika kandidat bertentangan dengan memori aktif yang paling mirip, 0 jika tidak.
+content_confidence()  C_content (0–1): how strongly the candidate is supported by its SOURCE TEXT (source turn +/- 1 line).
+contradiction()       R_poison signal (a): 1 if the candidate conflicts with the most similar active memories, else 0.
 
-Prompt tetap di prompts/gate_confidence.txt dan prompts/gate_contradiction.txt. Sumber (dialog/eksternal) TIDAK
-disebut di prompt: sumber sudah dinilai terpisah oleh tabel source trust. Jawaban yang tidak terbaca dicatat
-(PARSE_STATS) dan diberi nilai netral, bukan dibuang diam-diam.
+Fixed prompts in prompts/gate_confidence.txt and prompts/gate_contradiction.txt. The source (dialog/external) is NOT
+mentioned in the prompts: it is scored separately by the source-trust table. Unparseable replies are counted
+(PARSE_STATS) and given a neutral value, never silently dropped.
 """
 import re
 from collections import Counter
@@ -16,14 +16,14 @@ from llm import load_prompt
 
 PROMPT_CONF = load_prompt("gate_confidence")
 PROMPT_CONTRA = load_prompt("gate_contradiction")
-N_NEIGHBORS = 5          # memori aktif paling mirip yang dibandingkan pada cek kontradiksi
-CONTEXT_WIDTH = 1        # jumlah baris di sekitar turn asal yang ikut diberikan ke LLM
-NEUTRAL_CONF = 0.5       # dipakai jika jawaban confidence tidak terbaca
+N_NEIGHBORS = 5          # most similar active memories compared in the contradiction check
+CONTEXT_WIDTH = 1        # number of lines around the source turn given to the LLM
+NEUTRAL_CONF = 0.5       # used when a confidence reply cannot be parsed
 PARSE_STATS = Counter()  # "conf_ok", "conf_failed", "contra_ok", "contra_failed"
 
 
 def context_window(candidate, chunk_text, width=CONTEXT_WIDTH):
-    """Turn asal kandidat (overlap kata terbanyak) beserta `width` baris sebelum dan sesudahnya."""
+    """The candidate's source turn (largest word overlap) plus `width` lines before and after it."""
     cand = _tokens(candidate)
     lines = [ln for ln in chunk_text.splitlines() if ln.strip()]
     if not lines or not cand:
@@ -33,7 +33,7 @@ def context_window(candidate, chunk_text, width=CONTEXT_WIDTH):
 
 
 def parse_confidence(reply):
-    """'8' -> 0.8, '7/10' -> 0.7, '0.6' -> 0.6. None jika tidak ada angka yang masuk akal."""
+    """'8' -> 0.8, '7/10' -> 0.7, '0.6' -> 0.6. None if there is no sensible number."""
     m = re.search(r"\d+(?:\.\d+)?", reply)
     if not m:
         return None
@@ -56,7 +56,7 @@ def content_confidence(candidate, chunk_text, llm):
 
 
 def contradiction(candidate, neighbors, llm):
-    """neighbors = isi memori aktif yang paling mirip (list teks). Tanpa memori aktif -> 0 tanpa memanggil LLM."""
+    """neighbors = contents of the most similar active memories (list of text). No active memory -> 0 without an LLM call."""
     if not neighbors:
         return 0.0
     existing = "\n".join(f"- {n}" for n in neighbors[:N_NEIGHBORS])

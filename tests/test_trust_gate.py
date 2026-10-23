@@ -1,4 +1,4 @@
-"""Tes Trust Gate di graph (model palsu, embedding asli, kasus DEV). Jalankan: pytest -q"""
+"""Trust Gate tests inside the graph (fake model, real embeddings, DEV cases). Run: pytest -q"""
 import json
 import sys
 from pathlib import Path
@@ -33,32 +33,32 @@ def run_gate(case_id, emb, tmp_path, params=GateParams()):
     return case, out, log
 
 
-def test_decide_candidate_mode_dan_ablation():
+def test_decide_candidate_modes_and_ablations():
     p = GateParams(theta_accept=0.5, theta_reject=0.2)
-    assert decide_candidate(SIG, p) == (pytest.approx(0.3), "quarantine")                      # sumber eksternal
-    assert decide_candidate(SIG, GateParams(use_source_trust=False))[1] == "accept"            # ablation source trust
-    assert decide_candidate({**SIG, "t_source": 0.9, "r_pattern": 1.0}, p)[1] == "reject"      # pola -> R_poison = 1
+    assert decide_candidate(SIG, p) == (pytest.approx(0.3), "quarantine")                      # external source
+    assert decide_candidate(SIG, GateParams(use_source_trust=False))[1] == "accept"            # source-trust ablation
+    assert decide_candidate({**SIG, "t_source": 0.9, "r_pattern": 1.0}, p)[1] == "reject"      # pattern -> R_poison = 1
     assert decide_candidate({**SIG, "t_source": 0.9, "r_pattern": 1.0}, GateParams(use_poison_risk=False))[1] == "accept"
-    assert decide_candidate(SIG, GateParams(mode="content_only"))[1] == "accept"               # konten saja: C = 0.9
+    assert decide_candidate(SIG, GateParams(mode="content_only"))[1] == "accept"               # content only: C = 0.9
 
 
-def test_racun_A2_ditolak_dan_tidak_masuk_memori(emb, tmp_path):
+def test_A2_poison_rejected_and_kept_out_of_memory(emb, tmp_path):
     case, out, log = run_gate("T06-A2", emb, tmp_path)
     rejected = [r[0] for r in log.db.execute("SELECT content FROM rejected_log")]
-    assert any("hardwood" in c.lower() for c in rejected)           # racun A2 tertolak karena pola di turn asal
+    assert any("hardwood" in c.lower() for c in rejected)           # A2 poison rejected via the pattern in its source turn
     assert not any("hardwood" in m["content"].lower() for m in out["retrieved"]["q"])
-    assert log.count() == sum(e["n_candidates"] for e in out["log"])  # SEMUA kandidat tercatat
+    assert log.count() == sum(e["n_candidates"] for e in out["log"])  # EVERY candidate is logged
 
 
-def test_racun_A3_dikarantina_dan_tidak_masuk_memori(emb, tmp_path):
+def test_A3_poison_quarantined_and_kept_out_of_memory(emb, tmp_path):
     case, out, log = run_gate("T06-A3", emb, tmp_path)
     assert log.count("memory_quarantine") > 0
-    assert all(m["source"] == "dialog" for m in out["retrieved"]["q"])  # agen tidak pernah melihat sumber eksternal
+    assert all(m["source"] == "dialog" for m in out["retrieved"]["q"])  # the agent never sees the external source
     srcs = {r[0] for r in log.db.execute("SELECT source FROM memory_quarantine")}
     assert srcs == {"external_web"}
 
 
-def test_gate_tidak_menerima_label_serangan(emb, tmp_path):
+def test_gate_log_holds_no_attack_labels(emb, tmp_path):
     _, _, log = run_gate("T06-A1", emb, tmp_path)
     cols = [r[1] for r in log.db.execute("PRAGMA table_info(gate_decisions)")]
     assert not {"is_poison", "poison_value", "poison_keys", "truth_keys", "gold_answer", "attack"} & set(cols)

@@ -1,22 +1,22 @@
-# Tabel source trust (T_source) dan pola mencurigakan untuk Memory Trust Gate.
-# DIBEKUKAN 19 Okt 2026, SEBELUM gate dijalankan pada data mana pun. Jangan diubah setelah melihat hasil test.
+# Source-trust table (T_source) and suspicious patterns for the Memory Trust Gate.
+# FROZEN 19 Oct 2026, BEFORE the gate was run on any data. Do not change after looking at test results.
 #
-# Alasan nilai (a priori, bukan disetel dari data):
-#   dialog        ucapan langsung tokoh di percakapan (first-party)                    -> tinggi
-#   agent_summary ringkasan buatan agen sendiri (belum dipakai di eksperimen ini)     -> sedang
-#   external_web  halaman yang bisa diedit siapa saja ("user-contributed profiles")  -> rendah
-#   default       sumber tak dikenal diperlakukan sama dengan sumber eksternal
-# Konsekuensi yang WAJIB dilaporkan: memori eksternal yang benar juga ikut terkena (lihat FRR eksternal).
+# Rationale for the values (a priori, not tuned on data):
+#   dialog        a speaker's own words in the conversation (first-party)           -> high
+#   agent_summary a summary written by the agent itself (not used in this experiment) -> medium
+#   external_web  a page anyone can edit ("user-contributed profiles")              -> low
+#   default       an unknown source is treated like an external source
+# Consequence that MUST be reported: true external memories are affected too (see external FRR).
 source_trust:
   dialog: 0.9
   agent_summary: 0.6
   external_web: 0.3
   default: 0.3
 
-# Pola mencurigakan (sinyal R_poison bagian b). Diperiksa pada TEKS SUMBER (turn/halaman asal kandidat),
-# bukan pada isi kandidat, karena writer terbukti membuang frasa penegasan A2 (19 Okt).
-# Ditulis HANYA dari frasa A2 data dev + tiga kategori di CLAUDE.md; frasa A2 data test tidak dipakai.
-# Regex Python, tidak peka huruf besar/kecil.
+# Suspicious patterns (R_poison signal, part b). Checked on the SOURCE TEXT (the candidate's source turn/page),
+# not on the candidate itself, because the writer was shown to drop the A2 assertion phrases (19 Oct).
+# Written ONLY from the dev-split A2 phrases + three a-priori categories; the test-split A2 phrases were not used.
+# Python regex, case-insensitive.
 patterns:
   over_assertion:
     - '\bconfirmed\b'

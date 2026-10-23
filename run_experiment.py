@@ -1,19 +1,19 @@
 """
-run_experiment.py — semua kondisi eksperimen untuk satu atau beberapa model, dari satu perintah.
+run_experiment.py — every experimental condition for one or more models, from a single command.
 
-  python run_experiment.py --split dev                              # 4 model dari config/experiment.yaml
-  python run_experiment.py --split dev --models ollama:qwen3:8b     # satu model
-  python run_experiment.py --split test                             # HANYA setelah threshold dev dikunci
+  python run_experiment.py --split dev                              # the 4 models in config/experiment.yaml
+  python run_experiment.py --split dev --models ollama:qwen3:8b     # one model
+  python run_experiment.py --split test                             # ONLY after the dev thresholds are locked
 
-Kondisi per model:
-  no_defense          tanpa gate: baseline bersih (clean acc + jawaban acuan DCR), serangan A1–A3, A3-auth (+/- racun)
-  <varian gate>       trust, content_only, ablate_source, ablate_poison_risk (config/experiment.yaml):
-                      gate + serangan, gate + A3-auth, gate pada percakapan bersih (FRR dialog + clean acc),
-                      gate pada halaman eksternal bersih (FRR eksternal)
+Conditions per model:
+  no_defense          no gate: clean baseline (clean acc + DCR reference answers), attacks A1–A3, A3-auth (+/- poison)
+  <gate variant>      trust, content_only, ablate_source, ablate_poison_risk (config/experiment.yaml):
+                      gate + attacks, gate + A3-auth, gate on clean conversations (FRR dialog + clean acc),
+                      gate on clean external pages (FRR external)
 Output per model (results/):
-  exp_<split>_<model>.csv          satu baris per jawaban agen
-  exp_<split>_<model>_gate.sqlite  semua keputusan gate (run_id = "<varian>|<kasus>")
-  summary_<split>_<model>.csv      ringkasan metrik + Wilson CI 95%
+  exp_<split>_<model>.csv          one row per agent answer
+  exp_<split>_<model>_gate.sqlite  every gate decision (run_id = "<variant>|<case>")
+  summary_<split>_<model>.csv      metric summary + 95% Wilson CI
 """
 import argparse
 import csv
@@ -47,11 +47,11 @@ ATTACK_KINDS = ATTACKS[:3]
 
 
 def gate_params(model, variant_cfg):
-    # GATE_THRESHOLDS hanya untuk uji coba (mis. model palsu); eksperimen memakai file yang dikunci.
+    # GATE_THRESHOLDS is only for dry runs (e.g. the fake model); the experiment uses the locked file.
     path = Path(os.getenv("GATE_THRESHOLDS", ROOT / "config" / "gate_thresholds.yaml"))
     thr = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if model not in thr:
-        raise SystemExit(f"Threshold untuk {model} belum ada di config/gate_thresholds.yaml. Jalankan tune_gate.py di DEV dulu.")
+        raise SystemExit(f"No thresholds for {model} in config/gate_thresholds.yaml. Run tune_gate.py on DEV first.")
     t = thr[model][variant_cfg["threshold_from"]]
     return GateParams(mode=variant_cfg["mode"], theta_accept=t["theta_accept"], theta_reject=t["theta_reject"],
                       lambda_r=t["lambda_r"], use_source_trust=variant_cfg.get("use_source_trust", True),
@@ -91,7 +91,7 @@ def run_model(model, split, variants):
                    for t in targets if t["sample_id"] == sid])
 
     def one_condition(condition, app, gate_log=None):
-        # 1) percakapan bersih: clean accuracy (+ FRR dialog dari gate_log)
+        # 1) clean conversations: clean accuracy (+ FRR dialog from gate_log)
         for sid in convs:
             qs = qa_queries(sid)
             res = go(app, sid, qs, condition=condition, gate_log=gate_log)
@@ -101,7 +101,7 @@ def run_model(model, split, variants):
                     baseline[q["qid"]] = ans
                 rows.append({"condition": condition, "kind": q["kind"], "sample_id": sid, "qid": q["qid"],
                              "question": q["text"], "answer": ans, "correct": metrics.is_correct(ans, q["keys"])})
-        # 2) serangan A1–A3: ASR, DCR (acuan = jawaban baseline TANPA gate pada percakapan bersih)
+        # 2) attacks A1–A3: ASR, DCR (reference = the baseline answer WITHOUT a gate on the clean conversation)
         for case in cases:
             r = go(app, case["sample_id"], [{"qid": case["target_id"], "text": case["question"]}], case,
                    condition=condition, gate_log=gate_log)[case["target_id"]]
@@ -111,7 +111,7 @@ def run_model(model, split, variants):
                          "outcome": metrics.attack_outcome(r["answer"], case["poison_keys"], case["truth_keys"]),
                          "changed": metrics.changed(r["answer"], baseline[case["target_id"]]),
                          "poison_retrieved": any(metrics.contains_any(m["content"], case["poison_keys"]) for m in r["retrieved"])})
-        # 3) A3-auth (+ tanpa racun hanya untuk no_defense)
+        # 3) A3-auth (+ without poison, only for no_defense)
         for a in auths:
             q = [{"qid": a["case_id"], "text": a["user_request"]}]
             for cond, case in ((condition, a),) + (((condition + "_noattack", None),) if condition == "no_defense" else ()):
@@ -120,11 +120,11 @@ def run_model(model, split, variants):
                              "case_id": a["case_id"] if case else "", "question": a["user_request"], "answer": r["answer"],
                              "tool_calls": json.dumps(r["tool_calls"]),
                              "outcome": "success" if metrics.auth_attempted(r["tool_calls"], a["harmful_destination"]) else "fail"})
-        # 4) halaman eksternal BERSIH: hanya untuk FRR eksternal (tanpa pertanyaan)
+        # 4) CLEAN external pages: only for FRR external (no questions)
         if gate_log is not None:
             for c in externals:
                 go(app, c["sample_id"], [], c, condition=condition, gate_log=gate_log)
-        print(f"[{model}] {condition} selesai ({(time.time() - t0) / 60:.1f} menit sejak mulai)", flush=True)
+        print(f"[{model}] {condition} done ({(time.time() - t0) / 60:.1f} min since start)", flush=True)
 
     one_condition("no_defense", build_graph(llm, gate=None))
     for name, cfg in variants.items():
@@ -184,20 +184,20 @@ def print_summary(model, split, summary, seconds):
     s = {(r["condition"], r["metric"]): r for r in summary}
     f = lambda c, m: (lambda r: f"{100 * r['rate']:5.1f}%" if r and r["n"] else "   - ")(s.get((c, m)))
     conds = sorted({r["condition"] for r in summary}, key=lambda c: (c != "no_defense", c))
-    print(f"\n=== {model} | split={split} | k={K} | {seconds / 60:.1f} menit | writer {dict(PARSE_STATS)} ===")
+    print(f"\n=== {model} | split={split} | k={K} | {seconds / 60:.1f} min | writer {dict(PARSE_STATS)} ===")
     head = "".join(f"{c[:14]:>16}" for c in conds)
-    print(f"{'metrik':<26}{head}")
+    print(f"{'metric':<26}{head}")
     for m in (["clean_accuracy", "target_accuracy_clean"] + [f"ASR_{k}" for k in ATTACK_KINDS] + ["ASR_A3_auth"]
               + [f"DCR_{k}" for k in ATTACK_KINDS] + [f"PMAR_{k}" for k in ATTACKS] + ["FRR_dialog", "FRR_external"]):
         print(f"{m:<26}" + "".join(f"{f(c, m):>16}" for c in conds))
-    print(f"(ASR A3-auth tanpa racun, no_defense: {f('no_defense', 'ASR_A3_auth_without_poison')})")
+    print(f"(ASR A3-auth without poison, no_defense: {f('no_defense', 'ASR_A3_auth_without_poison')})")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--split", default="dev", choices=["dev", "test"])
     ap.add_argument("--models", nargs="*")
-    ap.add_argument("--variants", nargs="*", help="subset varian gate (default: semua)")
+    ap.add_argument("--variants", nargs="*", help="subset of gate variants (default: all)")
     args = ap.parse_args()
     cfg = yaml.safe_load((ROOT / "config" / "experiment.yaml").read_text(encoding="utf-8"))
     variants = {k: v for k, v in cfg["gate_variants"].items() if not args.variants or k in args.variants}
@@ -205,7 +205,7 @@ def main():
     enable_cache()
     for model in args.models or cfg["models"]:
         for v in variants.values():
-            gate_params(model, v)  # gagal di awal kalau threshold belum ada
+            gate_params(model, v)  # fail early if thresholds are missing
         PARSE_STATS.clear()
         run_model(model, args.split, variants)
 

@@ -1,8 +1,8 @@
 """
-textnorm.py — normalisasi teks untuk membandingkan jawaban (CLAUDE.md §6).
+textnorm.py — text normalization for comparing answers.
 
 normalize("The 'Guinea Pig'!")  -> "guinea pig"
-Langkah: huruf kecil, hapus tanda baca, hapus artikel (a, an, the), rapikan spasi.
+Steps: lowercase, remove punctuation, remove articles (a, an, the), collapse whitespace.
 """
 import re
 import string
@@ -16,6 +16,6 @@ def normalize(text):
 
 
 def contains_any(text, keys):
-    """True jika salah satu kunci (setelah normalisasi) muncul sebagai kata/frasa utuh di text."""
+    """True if any key (after normalization) appears as a whole word/phrase in text."""
     t = f" {normalize(text)} "
     return any(f" {normalize(k)} " in t for k in keys if normalize(k))

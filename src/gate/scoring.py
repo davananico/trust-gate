@@ -1,16 +1,16 @@
 """
-gate/scoring.py — Minggu 3: bagian Trust Gate yang TIDAK memakai LLM.
+gate/scoring.py — the parts of the Trust Gate that do NOT use an LLM.
 
-Rumus (CLAUDE.md §3):
+Formula:
   T_base  = min(T_source, C_content)
-  T_time  = exp(-lambda_t * delta_t)          delta_t = umur SUMBER (hari) saat dicatat
+  T_time  = exp(-lambda_t * delta_t)          delta_t = age of the SOURCE (days) at write time
   T_final = T_base * T_time - lambda_r * R_poison
-  T_final >= theta_accept -> accept | theta_reject <= T_final < theta_accept -> quarantine | lainnya -> reject
+  T_final >= theta_accept -> accept | theta_reject <= T_final < theta_accept -> quarantine | otherwise -> reject
 
-R_poison = max(sinyal kontradiksi (LLM, langkah 2), sinyal pola (di sini)).
-Semua fungsi murni: input angka/teks -> output angka/teks. Tidak membaca label serangan apa pun.
+R_poison = max(contradiction signal (LLM, gate/llm_signals.py), pattern signal (here)).
+All functions are pure: numbers/text in -> numbers/text out. They never read any attack label.
 
-Catatan data: di eksperimen ini semua sumber bertanggal saat injeksi, jadi delta_t = 0 dan T_time = 1.
+Data note: in this experiment every source is dated at injection time, so delta_t = 0 and T_time = 1.
 """
 import math
 import re
@@ -38,7 +38,7 @@ def source_trust(source):
 
 
 def pattern_hits(text):
-    """Kategori pola mencurigakan yang muncul di teks, mis. ['over_assertion']. Kosong = tidak ada."""
+    """Suspicious-pattern categories found in the text, e.g. ['over_assertion']. Empty = none."""
     _, compiled = load_config()
     return sorted(cat for cat, pats in compiled.items() if any(p.search(text) for p in pats))
 
@@ -48,10 +48,10 @@ def _tokens(text):
 
 
 def source_span(candidate, chunk_text):
-    """Baris di teks sumber yang paling mungkin melahirkan kandidat (overlap kata terbanyak).
+    """The line of the source text most likely to have produced the candidate (largest word overlap).
 
-    Dipakai supaya pola diperiksa pada turn asal kandidat saja, bukan seluruh sesi: catatan bersih dari
-    sesi yang sama tidak ikut tertandai hanya karena ada turn racun di sesi itu.
+    Used so that patterns are checked on the candidate's own source turn, not the whole session: clean memories
+    from the same session are not flagged just because a poisoned turn appears in that session.
     """
     cand = _tokens(candidate)
     lines = [ln for ln in chunk_text.splitlines() if ln.strip()]
@@ -65,11 +65,11 @@ def time_factor(age_days, lambda_t):
 
 
 def trust_score(t_source, c_content, r_poison, age_days=0.0, lambda_t=0.0, lambda_r=1.0):
-    """T_final. Semua masukan 0–1 (kecuali umur dan bobot)."""
+    """T_final. All inputs in 0–1 (except age and weights)."""
     return min(t_source, c_content) * time_factor(age_days, lambda_t) - lambda_r * r_poison
 
 
 def decide(score, theta_accept, theta_reject):
     if theta_reject > theta_accept:
-        raise ValueError("theta_reject harus <= theta_accept")
+        raise ValueError("theta_reject must be <= theta_accept")
     return "accept" if score >= theta_accept else "quarantine" if score >= theta_reject else "reject"

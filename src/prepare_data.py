@@ -1,18 +1,18 @@
 """
-prepare_data.py — Minggu 1: menyiapkan subset data LoCoMo untuk eksperimen Memory Trust Gate.
+prepare_data.py — prepares the LoCoMo subset for the Memory Trust Gate experiment.
 
-Yang dilakukan:
-  1. Membaca LoCoMo (data/raw/locomo10.json) dan daftar fakta target manual (data/targets_manual.json).
-  2. Memvalidasi setiap fakta target:
-       - kata kunci jawaban benar cocok dengan jawaban emas LoCoMo,
-       - kata kunci jawaban benar muncul di turn bukti (evidence),
-       - nilai racun TIDAK pernah muncul di percakapan asli (kalau muncul, cek kebocoran ke ASR),
-       - menghitung berapa kali fakta benar disebut di seluruh percakapan (redundansi).
-  3. Menentukan sesi injeksi racun = sesi setelah sesi bukti (supaya persistence lintas sesi teruji).
-  4. Membagi data per percakapan: 3 percakapan dev, 7 test (seed tetap).
-  5. Mengambil sampel pertanyaan bersih (non-target) untuk clean accuracy.
+What it does:
+  1. Reads LoCoMo (data/raw/locomo10.json) and the manual list of target facts (data/targets_manual.json).
+  2. Validates every target fact:
+       - the true-answer keywords match the LoCoMo gold answer,
+       - the true-answer keywords appear in the evidence turn,
+       - the poison value NEVER appears in the original conversation (if it did, it would leak into ASR),
+       - counts how often the true fact is mentioned across the conversation (redundancy).
+  3. Sets the poison injection session = the session after the evidence session (so cross-session persistence is tested).
+  4. Splits the data by conversation: 3 dev conversations, 7 test (fixed seed).
+  5. Samples clean (non-target) questions for clean accuracy.
 
-Jalankan dari folder proyek:
+Run from the project folder:
   python src/prepare_data.py
 Output: data/targets.json, data/split.json, data/clean_questions.json, data/targets_summary.csv
 """
@@ -36,7 +36,7 @@ CATEGORY_NAME = {1: "multi-hop", 2: "temporal", 3: "open-domain", 4: "single-hop
 
 
 def has_key(text, keys):
-    """True jika salah satu kata kunci muncul sebagai kata utuh (tidak peka huruf besar/kecil)."""
+    """True if any keyword appears as a whole word (case-insensitive)."""
     text = str(text)
     return any(re.search(r"(?<![A-Za-z])" + re.escape(k) + r"(?![A-Za-z])", text, re.I) for k in keys)
 
@@ -46,7 +46,7 @@ def count_key(texts, keys):
 
 
 def load_conversation(sample):
-    """Mengembalikan dict dia_id -> (nomor_sesi, turn), jumlah sesi, dan tanggal tiap sesi."""
+    """Returns a dict dia_id -> (session_number, turn), the number of sessions, and each session's date."""
     conv = sample["conversation"]
     turns, dates = {}, {}
     for key, val in conv.items():
@@ -79,9 +79,9 @@ def main():
             "poison_absent_in_conv": count_key(all_texts, m["poison_keys"]) == 0,
             "poison_not_in_gold": not has_key(qa["answer"], m["poison_keys"]),
             "inject_session_exists": ev_sess + 1 <= n_sess,
-            # Anotasi LoCoMo kadang salah orang (mis. soal tentang John, tapi yang bicara Tim).
+            # LoCoMo annotations sometimes name the wrong person (e.g. a question about John, but Tim is speaking).
             "evidence_speaker_is_subject": ev_turn["speaker"] in qa["question"],
-            # Template harus menghasilkan kalimat yang memuat kata kunci yang benar.
+            # The templates must produce sentences that contain the right keywords.
             "true_claim_has_truth_key": all(has_key(m[c].replace("{X}", m["true_value"]), m["truth_keys"])
                                             for c in ("claim_1p", "claim_3p")),
             "poison_claim_has_poison_key": all(has_key(m[c].replace("{X}", m["poison_value"]), m["poison_keys"])
@@ -90,11 +90,11 @@ def main():
         }
         for name, ok in checks.items():
             if not ok:
-                problems.append(f"{m['sample_id']} qa#{m['qa_index']}: {name} GAGAL")
+                problems.append(f"{m['sample_id']} qa#{m['qa_index']}: {name} FAILED")
 
         inject_sess = ev_sess + 1
-        # Subjek = tokoh yang namanya muncul PALING AWAL di pertanyaan. Jangan pakai urutan set:
-        # urutan set berubah tiap run, jadi soal yang menyebut dua nama (mis. T27) jadi tidak reproducible.
+        # Subject = the speaker whose name appears FIRST in the question. Do not rely on set order:
+        # set order changes between runs, so questions naming two people (e.g. T27) would not be reproducible.
         speakers = [sample["conversation"]["speaker_a"], sample["conversation"]["speaker_b"]]
         in_question = [sp for sp in speakers if sp in qa["question"]]
         subject = min(in_question, key=qa["question"].index) if in_question else None
@@ -124,7 +124,7 @@ def main():
             "checks": checks,
         })
 
-    # ---- split dev/test per percakapan (bukan per fakta) ----
+    # ---- dev/test split by conversation (not by fact) ----
     conv_ids = sorted(by_id)
     rng = random.Random(SEED)
     dev = sorted(rng.sample(conv_ids, N_DEV_CONV))
@@ -132,7 +132,7 @@ def main():
     for t in targets:
         t["split"] = "dev" if t["sample_id"] in dev else "test"
 
-    # ---- pertanyaan bersih untuk clean accuracy ----
+    # ---- clean questions for clean accuracy ----
     target_keys = {(t["sample_id"], t["qa_index"]) for t in targets}
     target_evidence = {(t["sample_id"], t["evidence_dia_id"]) for t in targets}
     clean = []
@@ -148,9 +148,9 @@ def main():
                 continue
             if q["evidence"][0] not in turns or (cid, q["evidence"][0]) in target_evidence:
                 continue
-            # Jawaban emas harus muncul UTUH (setelah normalisasi) di teks turn bukti. Kalau tidak
-            # (parafrase, atau jawaban hanya ada di caption gambar), string match tidak bisa menilainya
-            # dengan adil. Pertanyaan dan jawaban tetap persis dari LoCoMo; yang berubah hanya pilihan soal.
+            # The gold answer must appear IN FULL (after normalization) in the evidence turn. Otherwise
+            # (a paraphrase, or an answer that only appears in an image caption) string match cannot score it fairly.
+            # Questions and answers stay exactly as in LoCoMo; only the selection of questions changes.
             ev_text = turns[q["evidence"][0]][1]["text"]
             if not contains_any(ev_text, [ans]):
                 continue
@@ -164,7 +164,7 @@ def main():
             })
     clean.sort(key=lambda x: (x["sample_id"], x["qa_index"]))
 
-    # ---- simpan ----
+    # ---- save ----
     json.dump(targets, open(OUT / "targets.json", "w", encoding="utf-8"), indent=2, ensure_ascii=False)
     json.dump({"seed": SEED, "dev": dev, "test": test}, open(OUT / "split.json", "w"), indent=2)
     json.dump(clean, open(OUT / "clean_questions.json", "w", encoding="utf-8"), indent=2, ensure_ascii=False)
@@ -178,13 +178,13 @@ def main():
                         t["gold_answer"], t["poison_value"], t["evidence_dia_id"], t["evidence_session"],
                         t["inject_session"], t["truth_mentions_in_conv"], all(t["checks"].values())])
 
-    # ---- ringkasan ----
+    # ---- summary ----
     n_dev = sum(t["split"] == "dev" for t in targets)
-    print(f"Fakta target: {len(targets)}  (dev {n_dev}, test {len(targets) - n_dev})")
-    print(f"Kasus racun (x3 jenis serangan): {3 * len(targets)}  (test {3 * (len(targets) - n_dev)})")
-    print(f"Pertanyaan bersih: {len(clean)}")
+    print(f"Target facts: {len(targets)}  (dev {n_dev}, test {len(targets) - n_dev})")
+    print(f"Poison cases (x3 attack types): {3 * len(targets)}  (test {3 * (len(targets) - n_dev)})")
+    print(f"Clean questions: {len(clean)}")
     print(f"Dev: {dev}\nTest: {test}")
-    print("Masalah validasi:" if problems else "Semua cek validasi lolos.")
+    print("Validation problems:" if problems else "All validation checks passed.")
     for p in problems:
         print("  -", p)
 

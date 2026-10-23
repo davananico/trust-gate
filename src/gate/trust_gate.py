@@ -1,15 +1,15 @@
 """
-gate/trust_gate.py — Minggu 3, langkah 3: Trust Gate lengkap (sinyal + keputusan) untuk dipasang di graph.
+gate/trust_gate.py — the complete Trust Gate (signals + decision), plugged into the graph.
 
-make_trust_gate(llm, params) -> fungsi gate(kandidat, state) yang dipanggil node `trust_gate` di src/graph.py.
+make_trust_gate(llm, params) -> a function gate(candidate, state) called by the `trust_gate` node in src/graph.py.
 
-Dua tahap yang sengaja dipisah:
-  compute_signals()   T_source, C_content, R_contradiction, R_pattern  (LLM dipanggil di sini, hasil di-cache)
-  decide_candidate()  T_final + accept/quarantine/reject dari sinyal + GateParams (tanpa LLM)
-Dengan begitu threshold dan ablation bisa dihitung ulang dari sinyal yang tersimpan (gate_decisions).
+Two deliberately separate stages:
+  compute_signals()   T_source, C_content, R_contradiction, R_pattern  (LLM calls happen here, results are cached)
+  decide_candidate()  T_final + accept/quarantine/reject from the signals + GateParams (no LLM)
+This way thresholds and ablations can be recomputed from the stored signals (gate_decisions).
 
-Gate TIDAK membaca label serangan (is_poison, poison_value, poison_keys, truth_keys, gold_answer): kandidat dari
-memory_writer memang tidak membawa field itu.
+The gate does NOT read attack labels (is_poison, poison_value, poison_keys, truth_keys, gold_answer): candidates
+from memory_writer simply do not carry those fields.
 """
 from dataclasses import dataclass
 
@@ -19,11 +19,11 @@ from gate.scoring import decide, pattern_hits, source_span, source_trust, trust_
 
 @dataclass(frozen=True)
 class GateParams:
-    mode: str = "trust"            # "trust" = Trust Gate; "content_only" = pembanding gate konten saja (C_content saja)
-    theta_accept: float = 0.5      # SEMENTARA: disetel di dev (langkah 4)
-    theta_reject: float = 0.2      # SEMENTARA: disetel di dev (langkah 4)
+    mode: str = "trust"            # "trust" = Trust Gate; "content_only" = content-only baseline gate (C_content only)
+    theta_accept: float = 0.5      # placeholder default; tuned per model on dev (config/gate_thresholds.yaml)
+    theta_reject: float = 0.2      # placeholder default; tuned per model on dev (config/gate_thresholds.yaml)
     lambda_r: float = 1.0
-    lambda_t: float = 0.0          # Δt = 0 di dataset ini (lihat CLAUDE.md), jadi tidak berpengaruh
+    lambda_t: float = 0.0          # Δt = 0 in this dataset, so this has no effect
     use_source_trust: bool = True  # ablation: False -> T_source = 1
     use_poison_risk: bool = True   # ablation: False -> R_poison = 0
 
@@ -48,7 +48,7 @@ def compute_signals(cand, chunk_text, store, llm, params):
 
 
 def decide_candidate(sig, params):
-    """Kembalikan (T_final, keputusan). Fungsi murni, dipakai juga untuk menghitung ulang threshold/ablation."""
+    """Returns (T_final, decision). Pure function, also used to recompute thresholds/ablations."""
     if params.mode == "content_only":
         score = sig["c_content"]
     else:

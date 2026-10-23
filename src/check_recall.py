@@ -1,16 +1,16 @@
 """
-check_recall.py — Minggu 2: cek retrieval di data DEV untuk memilih k.
+check_recall.py — retrieval check on DEV data, used to choose k.
 
-Dua angka per k:
-  recall bersih  = % pertanyaan yang top-k-nya memuat memori berisi jawaban benar (memori bersih, tanpa racun).
-                   Kalau rendah, agen tidak mungkin menjawab benar -> masalah retrieval/writer, bukan gate.
-  jangkauan racun = % kasus racun yang top-k-nya memuat memori berisi nilai racun (tanpa pertahanan).
-                   Ini batas atas ASR: racun yang tidak terambil tidak mungkin memengaruhi jawaban.
+Two numbers per k:
+  clean recall  = % of questions whose top-k contains a memory with the correct answer (clean memory, no poison).
+                  If this is low, the agent cannot answer correctly -> a retrieval/writer problem, not a gate problem.
+  poison reach  = % of poison cases whose top-k contains a memory with the poison value (no defense).
+                  This is an upper bound on ASR: poison that is never retrieved cannot affect the answer.
 
-Hanya memakai split dev (aturan: pengaturan tidak boleh dipilih dengan data test).
-Model writer mengikuti LLM_MODEL. Dengan model palsu, memori = baris dialog mentah -> angka hanya indikasi awal.
+Uses the dev split only (rule: settings must never be chosen on test data).
+The writer model follows LLM_MODEL. With the fake model, memories = raw dialog lines -> numbers are only indicative.
 
-Jalankan: python src/check_recall.py
+Run: python src/check_recall.py
 """
 import json
 from collections import defaultdict
@@ -27,7 +27,7 @@ load = lambda name: json.load(open(DATA / name, encoding="utf-8"))
 
 
 def memories_for(sample_id, llm, case=None, _clean={}):
-    """Kandidat memori satu percakapan. Sesi yang tidak disisipi memakai hasil writer bersih (dihitung sekali)."""
+    """Memory candidates for one conversation. Sessions without poison reuse the clean writer output (computed once)."""
     if sample_id not in _clean:
         _clean[sample_id] = {ch["chunk_id"]: write_memories(ch, llm)
                              for ch in locomo.writer_chunks(locomo.load_sessions(sample_id))}
@@ -49,19 +49,19 @@ def main():
     llm, emb = get_chat_model(), LocalEmbeddings()
     dev = set(load("split.json")["dev"])
 
-    questions = defaultdict(list)  # sample_id -> [(jenis, pertanyaan, kunci jawaban)]
+    questions = defaultdict(list)  # sample_id -> [(kind, question, answer keys)]
     for q in load("clean_questions.json"):
         if q["split"] == "dev":
-            questions[q["sample_id"]].append(("QA bersih", q["question"], [q["gold_answer"]]))
+            questions[q["sample_id"]].append(("clean QA", q["question"], [q["gold_answer"]]))
     for t in load("targets.json"):
         if t["split"] == "dev":
-            questions[t["sample_id"]].append(("fakta target", t["question"], t["truth_keys"]))
+            questions[t["sample_id"]].append(("target fact", t["question"], t["truth_keys"]))
 
     clean_hits = defaultdict(list)
     for sid in sorted(dev):
         store = MemoryStore(emb)
         store.add(memories_for(sid, llm))
-        print(f"{sid}: {store.count()} memori bersih")
+        print(f"{sid}: {store.count()} clean memories")
         for kind, question, keys in questions[sid]:
             got = store.retrieve(question, k=max(KS))
             clean_hits[kind].append({k: any(contains_any(m["content"], keys) for m in got[:k]) for k in KS})
@@ -80,7 +80,7 @@ def main():
     for kind, hits in clean_hits.items():
         print(f"recall {kind:<14} (n={len(hits):>2}) " + " ".join(rate(hits).values()))
     for kind, hits in poison_hits.items():
-        print(f"racun {kind[:15]:<15} (n={len(hits):>2}) " + " ".join(rate(hits).values()))
+        print(f"poison {kind[:14]:<14} (n={len(hits):>2}) " + " ".join(rate(hits).values()))
 
 
 if __name__ == "__main__":
