@@ -3,36 +3,36 @@
 ollama:gemma4:12b:
   content_only:
     lambda_r: 1.0
-    theta_accept: 0.0
-    theta_reject: -1.0
+    theta_accept: -0.5
+    theta_reject: -0.75
   trust:
     lambda_r: 1.0
-    theta_accept: 0.0
-    theta_reject: 0.0
+    theta_accept: -0.05
+    theta_reject: -0.05
 ollama:llama3.1:8b:
   content_only:
     lambda_r: 1.0
-    theta_accept: 0.55
-    theta_reject: 0.55
+    theta_accept: 0.7
+    theta_reject: 0.6
   trust:
     lambda_r: 1.0
-    theta_accept: 0.0
-    theta_reject: 0.0
+    theta_accept: -0.05
+    theta_reject: -0.05
 ollama:olmo-3:7b-instruct:
   content_only:
     lambda_r: 1.0
-    theta_accept: 0.55
-    theta_reject: 0.55
+    theta_accept: 0.75
+    theta_reject: 0.65
   trust:
     lambda_r: 1.0
-    theta_accept: 0.0
-    theta_reject: 0.0
+    theta_accept: -0.05
+    theta_reject: -0.05
 ollama:qwen3:8b:
   content_only:
     lambda_r: 1.0
-    theta_accept: 0.0
-    theta_reject: -1.0
+    theta_accept: -0.5
+    theta_reject: -0.75
   trust:
     lambda_r: 1.0
-    theta_accept: 0.0
-    theta_reject: 0.0
+    theta_accept: -0.05
+    theta_reject: -0.05

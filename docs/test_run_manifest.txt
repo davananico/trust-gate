@@ -1,0 +1,45 @@
+RUN TEST dimulai: 2026-10-22T09:25:53Z (UTC)
+Perintah: .venv/bin/python run_experiment.py --split test
+Ollama: ollama version is 0.40.4
+olmo-3:7b-instruct    ea72df8c85d7    4.5 GB    6 days ago    
+qwen3:8b              500a1f067a9f    5.2 GB    7 days ago    
+gemma4:12b            6114515d63c1    8.0 GB    7 days ago    
+llama3.1:8b           46e0c10c039e    4.9 GB    7 days ago    
+--- md5 file yang dikunci ---
+e00265569f9eb47c5fa247b1c3a42362  run_experiment.py
+b7f2c533baa31c97579e066c73fc9e9c  config/experiment.yaml
+bee883a25be6151b0e43da436933809b  config/gate_thresholds.yaml
+bb8dc501b65c9c84e5c4ccadf2cdab50  config/source_trust.yaml
+9118ce611aa75aed0b8978e0b04d3810  prompts/agent_answer.txt
+f7d836b26d481b83fa145f1c31dba8dc  prompts/agent_tool.txt
+54337a683d62aa51c6a308baf0b825fc  prompts/gate_confidence.txt
+85dc01208cd5ec61eeaadd69b183ac9f  prompts/gate_contradiction.txt
+0c8548b12787c75a73a249ed1a61ffe7  prompts/memory_writer.txt
+6e684e7daa2a0185bd0fb52ab6bf6c6d  src/agent.py
+1d994927553b780b5945d8236ba32d3a  src/check_recall.py
+9aed9d4e63e8e70ed455b9ce53bdc744  src/demo.py
+7867f09e0b642cf6d49db621891202da  src/graph.py
+36ff1099633fcfcead2e95a96c12df61  src/hello_graph.py
+48f1794db4a6401f3c3352114221a961  src/llm.py
+f8ae156958c360fe98d5f5cd59553899  src/locomo.py
+300809fb0514370532f9b5233a725fe3  src/make_attacks.py
+825f95e2b907777df9b96c1d57caa089  src/memory_store.py
+f13918e2fba264a4ba8382fff06c5566  src/memory_writer.py
+9e6e48789e397ff1dc9d4055d36d8811  src/metrics.py
+b6a0e2b9b5fffa380baaaa11df0cdd42  src/prepare_data.py
+686af319624fa0bc06ad6ce692087dec  src/run_week2.py
+125346e9835a7ff284db24edfa80c9c8  src/textnorm.py
+c7365e261690b1aef438b1633375b3e2  src/tools.py
+9c4c526ae09d4a9646d8bde2d272dbeb  src/tune_gate.py
+da1d7a507a7e0d28f80022b91a2aa743  src/gate/gate_log.py
+7fe91473ed2e94872c1e088f70e5205f  src/gate/__init__.py
+ff93e3c0d51244ca93bca0ff4e56133e  src/gate/llm_signals.py
+03b0eb5a1a7bd8264bd6c2fba8dfddb4  src/gate/scoring.py
+8862e96a2546a18c4a9f78eb15724dcf  src/gate/trust_gate.py
+2b495ed12016972cbb8cb91119a20971  data/auth_scenarios.json
+96486a4824ba9aa30204019f884b128a  data/clean_external.json
+50a62fc2e9200994e62843caefb564d8  data/clean_questions.json
+40d2384a7e63bd3a4d731fd513eacea1  data/poison_cases.json
+b45770b6c8bbe687ba6fc2633e499f24  data/split.json
+3179c60e379f64e719a100c5b0dbb073  data/targets.json
+97d75248ee658942afd47142efbaa7c6  data/targets_manual.json

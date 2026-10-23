@@ -61,11 +61,15 @@ def collect():
     print(f"Sinyal tersimpan: {path.relative_to(ROOT)}")
 
 
-def labelled_rows():
-    """Kelompokkan baris gate_decisions: clean_dialog, clean_external, dan racun per jenis serangan (hanya evaluasi)."""
-    db = sqlite3.connect(signals_path())
+def labelled_rows(path=None, run_prefix=None, split="dev"):
+    """Kelompokkan baris gate_decisions: clean_dialog, clean_external, dan racun per jenis serangan (hanya evaluasi).
+
+    run_prefix: hanya baris yang run_id-nya diawali teks ini (dipakai run_experiment.py untuk memisahkan varian gate).
+    """
+    db = sqlite3.connect(path or signals_path())
     db.row_factory = sqlite3.Row
-    rows = [dict(r) for r in db.execute("SELECT * FROM gate_decisions")]
+    rows = [dict(r) for r in db.execute("SELECT * FROM gate_decisions")
+            if run_prefix is None or r["run_id"].startswith(run_prefix)]
     cases = {c["case_id"]: c for name in ("poison_cases.json", "clean_external.json", "auth_scenarios.json") for c in load(name)}
     groups, untracked = defaultdict(list), defaultdict(int)
     for r in rows:
@@ -81,7 +85,7 @@ def labelled_rows():
             if contains_any(r["content"], keys):
                 groups[c.get("attack") or "A3_auth"].append(r)
     for cid, c in cases.items():
-        if c["split"] == "dev" and (c.get("attack") or c["case_id"].startswith("AUTH")):
+        if c["split"] == split and (c.get("attack") or c["case_id"].startswith("AUTH")):
             kind = c.get("attack") or "A3_auth"
             if not any(r["case_id"] == cid for r in groups[kind]):
                 untracked[kind] += 1
@@ -99,22 +103,34 @@ def rates(groups, params):
     return {"J": j, "PMAR": pmar, "PMRR": pmrr, "FRR": frr, "clean_reject": clean_rej}
 
 
+def midpoint(values):
+    """Nilai di tengah rentang nilai yang sama-sama optimal (dibulatkan ke nilai grid terdekat).
+
+    Amandemen 20 Okt (spesifikasi §6b): menggantikan "theta terkecil", yang memilih ujung rentang sehingga skor
+    tepat di batas (mis. T_final = 0 = theta_accept) dan hasil ablation ditentukan oleh nilai yang kebetulan seri.
+    """
+    mid = (min(values) + max(values)) / 2
+    return min(values, key=lambda v: (abs(v - mid), v))
+
+
 def choose(groups, mode):
-    steps = [round(0.05 * i, 2) for i in range(21)]
+    steps = [round(-1.0 + 0.05 * i, 2) for i in range(41)]  # -1..1: T_final bisa negatif (T_base - lambda_r * R)
     lambdas = (0.25, 0.5, 1.0) if mode == "trust" else (1.0,)
-    best = None
-    for ta in steps:
-        for lr in lambdas:
-            r = rates(groups, GateParams(mode=mode, theta_accept=ta, theta_reject=-9.0, lambda_r=lr))
-            key = (round(r["J"], 6), ta, -lr)  # seri: theta_accept terkecil, lalu lambda_r terbesar
-            if best is None or key < best[0]:
-                best = (key, ta, lr)
-    _, ta, lr = best
-    best_tr = max((tr for tr in [-9.0] + [x for x in steps if x <= ta]),
-                  key=lambda tr: (lambda r: sum(r["PMRR"].values()) / len(r["PMRR"])
-                                  - (r["clean_reject"]["clean_dialog"] + r["clean_reject"]["clean_external"]) / 2)(
-                      rates(groups, GateParams(mode=mode, theta_accept=ta, theta_reject=tr, lambda_r=lr))))
-    return GateParams(mode=mode, theta_accept=ta, theta_reject=max(best_tr, -1.0), lambda_r=lr)
+    j = {(ta, lr): round(rates(groups, GateParams(mode=mode, theta_accept=ta, theta_reject=-9.0, lambda_r=lr))["J"], 6)
+         for ta in steps for lr in lambdas}
+    best_j = min(j.values())
+    lr = max(l for (_, l), v in j.items() if v == best_j)           # seri lambda_r: terbesar
+    ta = midpoint([t for (t, l), v in j.items() if v == best_j and l == lr])
+
+    def reject_score(tr):
+        r = rates(groups, GateParams(mode=mode, theta_accept=ta, theta_reject=tr, lambda_r=lr))
+        return round(sum(r["PMRR"].values()) / len(r["PMRR"])
+                     - (r["clean_reject"]["clean_dialog"] + r["clean_reject"]["clean_external"]) / 2, 6)
+
+    tr_grid = [round(-1.0 + 0.05 * i, 2) for i in range(41) if -1.0 + 0.05 * i <= ta + 1e-9]
+    scores = {tr: reject_score(tr) for tr in tr_grid}
+    tr = midpoint([t for t, v in scores.items() if v == max(scores.values())])
+    return GateParams(mode=mode, theta_accept=ta, theta_reject=tr, lambda_r=lr)
 
 
 def tune():

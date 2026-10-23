@@ -67,11 +67,12 @@ Keputusan (ditetapkan sekarang, sebelum melihat test): **semua target tetap dipa
 
 ## 6b. Pemilihan threshold (ditetapkan 20 Okt 2026, sebelum hasil gate di dev dilihat)
 
-Per model, hanya di dev. Sinyal gate dikumpulkan sekali (gate "terima semua" = memori aktif sama dengan tanpa pertahanan), lalu semua kombinasi dicoba tanpa LLM: theta_accept 0,00–1,00 (langkah 0,05), lambda_r ∈ {0,25; 0,5; 1,0}.
+Per model, hanya di dev. Sinyal gate dikumpulkan sekali (gate "terima semua" = memori aktif sama dengan tanpa pertahanan), lalu semua kombinasi dicoba tanpa LLM: theta_accept −1,00–1,00 (langkah 0,05; awalnya 0,00–1,00, lihat amandemen), lambda_r ∈ {0,25; 0,5; 1,0}.
 
 - Kriteria utama: minimalkan **J = rata-rata PMAR per jenis serangan (A1, A2, A3, A3-auth) + rata-rata(FRR dialog, FRR eksternal)**. FRR eksternal diberi bobot sama supaya gate tidak "menang" dengan menolak semua sumber eksternal (circular reasoning).
 - theta_reject (memisahkan quarantine dari reject; tidak memengaruhi J): maksimalkan (proporsi racun yang reject − proporsi memori bersih yang reject), theta_reject ≤ theta_accept.
-- Seri: pilih theta_accept terkecil, lalu lambda_r terbesar.
+- Seri: ~~pilih theta_accept terkecil~~, lalu lambda_r terbesar.
+- **Amandemen 20 Okt 2026 (masih di dev, sebelum data test disentuh):** seri theta_accept dan theta_reject diputuskan dengan **titik tengah rentang nilai yang sama-sama optimal**. Alasan: aturan "terkecil" memilih theta_accept = 0, tepat di batas skor racun tanpa source trust (min(1,1) − 1 = 0), sehingga ablation "tanpa source trust" ditentukan oleh nilai yang kebetulan seri, bukan oleh peran source trust. Hasil dengan aturan lama disimpan (`results/dev_run1_tiebreak_terkecil/`). Grid theta_accept diperluas ke −1,00…1,00 (sebelumnya 0,00–1,00, padahal T_final bisa negatif) dan theta_reject ke −1,00…theta_accept.
 - Gate konten saja disetel dengan kriteria J yang sama (lambda_r tidak berlaku).
 - Angka final dev = run penuh dengan threshold terpilih (keputusan gate memengaruhi memori aktif, jadi hitung ulang offline hanya perkiraan).
 

@@ -11,6 +11,7 @@ python-dotenv==1.2.4
 pyyaml==6.0.3
 numpy==2.5.4
 pytest==9.1.1
+matplotlib==3.11.2
 # Embedding lokal (CPU). Pasang torch versi CPU DULU supaya tidak mengunduh versi GPU yang besar:
 #   pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
 torch==2.14.1
