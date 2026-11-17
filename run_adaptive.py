@@ -50,9 +50,9 @@ def poison_keys(case):
     return case.get("poison_keys") or [case["harmful_destination"]]
 
 
-def run_model(model, split, variants, cases):
+def run_model(model, split, variants, cases, suffix=""):
     t0 = time.time()
-    tag = re.sub(r"[^\w.-]", "_", f"{split}_{model}")
+    tag = re.sub(r"[^\w.-]", "_", f"{split}_{model}") + suffix
     llm, emb = get_chat_model(model), LocalEmbeddings()
     tools.LOG = RESULTS / f"adaptive_{tag}_tool_log.jsonl"
     tools.LOG.unlink(missing_ok=True)
@@ -150,17 +150,20 @@ def main():
     ap.add_argument("--split", default="dev", choices=["dev", "test"])
     ap.add_argument("--models", nargs="*")
     ap.add_argument("--variants", nargs="*", default=["trust"], help="gate variants (default: trust)")
+    ap.add_argument("--attacks", nargs="*", help="subset, e.g. AD3_flooding (outputs get a suffix, nothing is overwritten)")
     args = ap.parse_args()
     cfg = yaml.safe_load((ROOT / "config" / "experiment.yaml").read_text(encoding="utf-8"))
     variants = {k: v for k, v in cfg["gate_variants"].items() if k in args.variants}
-    cases = [c for c in json.load(open(DATA / "adaptive_cases.json", encoding="utf-8")) if c["split"] == args.split]
+    cases = [c for c in json.load(open(DATA / "adaptive_cases.json", encoding="utf-8"))
+             if c["split"] == args.split and (not args.attacks or c["attack"] in args.attacks)]
+    suffix = "_" + "-".join(a.split("_")[0] for a in args.attacks) if args.attacks else ""
     RESULTS.mkdir(exist_ok=True)
     enable_cache()
     for model in args.models or cfg["models"]:
         for v in variants.values():
             gate_params(model, v)  # fail early if thresholds are missing
         PARSE_STATS.clear()
-        run_model(model, args.split, variants, cases)
+        run_model(model, args.split, variants, cases, suffix)
 
 
 if __name__ == "__main__":

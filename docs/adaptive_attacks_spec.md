@@ -50,6 +50,23 @@ no hit of their own (checked by `tests/test_adaptive.py`).
 - AD1: does the writer still record the claim when the assertion is a separate turn?
 - No attack is tuned on test results.
 
+## Revisions made on dev (before any test-split run)
+
+- **17 Nov 2026, AD3 v1 → v2.** Dev run with qwen3:8b (Trust Gate): the writer recorded only 12 of the 90 v1 filler
+  turns as memories (opinion-like sentences such as "Honestly, {T} means a lot to me."), and the true fact was
+  outside the judge's 5 neighbours for only 2 of 14 poisons (3 of 14 for AD1, which has no fillers). The attack
+  failed at the writer, so it did not test the gate. v2 fillers are dated events ("Last Sunday I talked about {T}
+  with my sister for a long time."). Only the 49 AD3 cases changed; v1 is kept in `data/adaptive_cases_v1.json`.
+  v1 dev results (all 4 models) are kept in `results/adaptive_dev_*`; v2 dev results in `results/adaptive_dev_*_AD3*`.
+- **17 Nov 2026, AD3 v2 frozen (no further revision).** qwen3 dev: the writer recorded 33 of 90 v2 fillers, yet the
+  true fact left the judge's 5 neighbours in only 1 of 14 cases (the true memory stays the poison's nearest
+  neighbour: same subject, same sentence shape), the judge flagged 11 of 15, PMAR 27% (A1 dev level 40%). Revising
+  again until the attack "works" would be tuning the attack to a result, so AD3 v2 is run on test as is and reported
+  as a negative result (the 5-neighbour window resists naive flooding). A stronger flood, e.g. fillers in the claim's
+  own sentence shape, is left as future work.
+- AD1, AD2, AD4: no revision; consistent across the 4 models on dev. Frozen with checksums in
+  `docs/adaptive_test_manifest.txt` before their test run.
+
 ## Hypotheses (stated before any real-model run)
 
 - AD1 and AD2 bring PMAR close to the A1 level, showing the A2 result (0%) depends on the lexicon, not on detecting

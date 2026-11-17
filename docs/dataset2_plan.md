@@ -41,10 +41,26 @@ Rough compute (an estimate, not measured): about 30 targets × 10 sessions × (c
 AD1–AD3) runs × 2 conditions; writer calls are cached across runs of the same question, gate calls are not.
 Expected a few hours per model on one L4.
 
-## Decisions needed from the author
+## Decisions (accepted by the author, 17 Nov 2026)
 
-- **A. How many targets:** 30 poison + 30 updates (proposed), or all 56 + 70 (about twice the compute).
-- **B. Assistant turns:** (1) keep full assistant turns: more faithful, much more text and compute; or
-  (2) user turns only: lighter; the agent still remembers only user facts, but this differs from the LoCoMo
-  pipeline and must be stated as a limitation. Proposed: (2).
-- **C. Who writes the poison values and templates:** Claude drafts them, the author checks every row (proposed).
+- **A.** 30 poison targets + 3 pilot targets (fixed before any run, never reported) + 30 update probes.
+- **B.** User turns only (assistant turns dropped). Stated as a limitation: differs from the LoCoMo pipeline.
+- **C.** The values and templates (`data/lme_targets_manual.json`, `data/lme_update_probes.json`) were drafted first
+  and every row was then checked by the author (`"review": "reviewed"`) before the reported run.
+
+## Implementation (17 Nov 2026)
+
+- `src/lme.py`: loader (user turns, 10-session windows) and case builder → `data/lme_poison_cases.json`
+  (A1, A2, A3, AD1, AD2 per target; test-split phrases), `data/lme_clean_external.json`, `data/lme_updates.json`.
+  One target (`6ade9755`) has its evidence in the last session; its poison goes into an extra empty session dated at
+  the question.
+- `run_lme.py`: no defense vs Trust Gate with the LoCoMo-locked thresholds. Metrics: target accuracy, ASR and PMAR per
+  attack, FRR dialog/external, update accuracy, update-rejection rate.
+- `tests/test_lme.py` (6 tests). Dry run with the fake model OK.
+- **Pilot 1 (qwen3, 17 Nov 2026) — invalid, fixed:** with the speaker label "User", the locked writer prompt ("facts
+  about the people in it ... use full names") returned `[]` for most sessions, including the poison turn (e.g. only
+  2 of 10 sessions produced any memory). Fix without touching the prompt: the user is named "Emery" (3 occurrences in
+  the whole raw file, none in the selected windows; tested), questions are asked as "Emery: <question>" (the A3-auth
+  convention), and external pages name Emery instead of "this user". Pilot outputs moved to
+  `results/_invalid_lme_pilot_user_label/`. **The pilot must be rerun before the reported run.**
+- AD3 (flooding) needs a hand-written topic per target and AD4 is a per-conversation scenario; both are LoCoMo-only.
