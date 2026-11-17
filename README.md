@@ -15,6 +15,7 @@ question ─► retrieve (top-10) ─► agent_answer ─► answer / proposed t
 ```
 
 Full design, threat model, metrics and every locked decision: [`docs/experiment_spec.md`](docs/experiment_spec.md).
+Step-by-step commands to reproduce everything from scratch: [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
 
 ## Repository layout
 

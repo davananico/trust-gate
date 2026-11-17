@@ -1,7 +1,8 @@
 """
 demo.py — walkthrough demo: one case (default T01, Caroline) run WITHOUT and WITH poison.
 
-Three panels: no poison, poison without defense, poison + Trust Gate (placeholder thresholds from GateParams()).
+Three panels: no poison, poison without defense, poison + Trust Gate (the model's LOCKED thresholds from
+config/gate_thresholds.yaml, i.e. the same gate as in the experiment; placeholder defaults only for the fake model).
 Shows: the poison sentence, gate decisions in the injection session, the top 3 memories retrieved, and the answer.
 Not part of the experiment; only illustrates the memory-poisoning flow.
 
@@ -9,7 +10,10 @@ Run: python src/demo.py            (case T01-A1)
      python src/demo.py T01-A3     (another case)
 """
 import json
+import os
 import sys
+
+import yaml
 
 import locomo
 from gate.gate_log import GateLog
@@ -35,7 +39,12 @@ if type(llm).__name__ == "FakeModel":
     print("NOTE: dummy LLM -> the agent always answers with the rank-1 memory.")
 
 poisoned = locomo.inject_poison(locomo.load_sessions(case["sample_id"]), case)
-gated_app = build_graph(llm, gate=make_trust_gate(llm, GateParams()))
+thresholds = yaml.safe_load((locomo.ROOT / "config" / "gate_thresholds.yaml").read_text(encoding="utf-8"))
+locked = thresholds.get(os.getenv("LLM_MODEL", "fake"), {}).get("trust")
+params = GateParams(**locked) if locked else GateParams()
+print(f"Trust Gate thresholds: theta_accept={params.theta_accept}, theta_reject={params.theta_reject}, "
+      f"lambda_r={params.lambda_r} ({'locked, same as the experiment' if locked else 'placeholder defaults'})")
+gated_app = build_graph(llm, gate=make_trust_gate(llm, params))
 for label, graph_app, sessions in (("1) NO POISON", app, locomo.load_sessions(case["sample_id"])),
                                    ("2) POISONED, NO DEFENSE", app, poisoned),
                                    ("3) POISONED + TRUST GATE", gated_app, poisoned)):
