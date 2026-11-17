@@ -12,3 +12,5 @@ chroma_db/
 CLAUDE.md
 cache/
 graphify-out/
+# LongMemEval raw files (277 MB; see docs/dataset2_plan.md for source + sha256)
+data/raw/longmemeval/
