@@ -11,7 +11,8 @@ Therefore:
     independent, so it is somewhat optimistic).
 
 Inputs (per-trial CSVs): results/test_final/exp_test_*.csv, results/adaptive/adaptive_test_*.csv,
-results/lme/lme_lme_*.csv, and results/post_test/ (contradiction-only baseline, LoCoMo-Adv) when present.
+results/lme/lme_lme_*.csv, and results/post_test/ (contradiction-only baseline, LoCoMo-Adv) and
+results/post_test_mempoison/ (MemPoison consistency baseline) when present.
 Output: results/pooled/pooled_analysis.csv
 
 Run: python src/pooled_analysis.py
@@ -25,6 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = ROOT / "results"
+POST = (RESULTS / "post_test", RESULTS / "post_test_mempoison")  # runs added after the test
 MODELS = ["qwen3_8b", "gemma4_12b", "llama3.1_8b", "olmo-3_7b-instruct"]
 N_BOOT, SEED = 10_000, 2026
 
@@ -46,21 +48,21 @@ def load():
                      "unit": unit, "target": _target(unit), "success": r.get("outcome") == "success",
                      "correct": r.get("correct") == "True" or r.get("outcome") == "correct"})
 
-    for folder in (RESULTS / "test_final", RESULTS / "post_test"):
+    for folder in (RESULTS / "test_final", *POST):
         for p in folder.glob("exp_test_*.csv"):
             for r in csv.DictReader(open(p, encoding="utf-8")):
                 if r["condition"].endswith("_noattack"):
                     continue
                 add("locomo", p, r["kind"], r["case_id"] or r["qid"], r)
-    for folder in (RESULTS / "adaptive", RESULTS / "post_test"):
+    for folder in (RESULTS / "adaptive", *POST):
         for p in folder.glob("adaptive_test_*.csv"):
             for r in csv.DictReader(open(p, encoding="utf-8")):
                 add("locomo", p, r["attack"], r["case_id"], r)
-    for folder in (RESULTS / "lme", RESULTS / "post_test"):
+    for folder in (RESULTS / "lme", *POST):
         for p in folder.glob("lme_lme_*.csv"):
             for r in csv.DictReader(open(p, encoding="utf-8")):
                 add("lme", p, r["kind"], r["case_id"], r)
-    for p in (RESULTS / "post_test").glob("locomo_adv_test_*.csv"):
+    for p in (p for folder in POST for p in folder.glob("locomo_adv_test_*.csv")):
         for r in csv.DictReader(open(p, encoding="utf-8")):
             add("locomo_adv", p, r["attack"], r["case_id"], r)
     # the same trial can appear twice (post_test re-runs no_defense from cache): keep the first copy
@@ -116,7 +118,7 @@ def compare(recs, dataset, metric, a, b, by="condition", models=None):
 
 def comparisons(recs):
     L, M = "locomo", "lme"
-    nd, tr, co = "no_defense", "trust", "contradiction_only"
+    nd, tr, co, mp = "no_defense", "trust", "contradiction_only", "mempoison_consistency"
     out = []
     # 1) the gate lowers ASR (per attack) and what it costs in accuracy
     for kind in ("A1_false_fact", "A2_confident_poison", "A3_external_source", "A3_auth",
@@ -142,7 +144,20 @@ def comparisons(recs):
             out.append(compare(recs, ds, "success", (co, kind), (tr, kind)))
     for ds, kind in ((L, "clean_qa"), (L, "target_qa"), (M, "target_qa"), (M, "update_qa")):
         out.append(compare(recs, ds, "correct", (co, kind), (tr, kind)))
-    # 4) LoCoMo-Adv: fact overwrite ASR and target accuracy under every family
+    # 4) literature baseline: MemPoison consistency check vs no defense and vs the Trust Gate (when present)
+    for ds, kinds in ((L, ("A1_false_fact", "A2_confident_poison", "A3_external_source", "A3_auth", "AD1_split_assertion",
+                           "AD2_lexicon_free", "AD3_flooding", "AD4_dialog_auth")),
+                      (M, ("A1_false_fact", "A2_confident_poison", "A3_external_source", "AD1_split_assertion",
+                           "AD2_lexicon_free"))):
+        for kind in kinds:
+            out.append(compare(recs, ds, "success", (nd, kind), (mp, kind)))
+            out.append(compare(recs, ds, "success", (mp, kind), (tr, kind)))
+    for ds, kind in ((L, "clean_qa"), (L, "target_qa"), (M, "target_qa"), (M, "update_qa")):
+        out.append(compare(recs, ds, "correct", (nd, kind), (mp, kind)))
+        out.append(compare(recs, ds, "correct", (mp, kind), (tr, kind)))
+    out.append(compare(recs, "locomo_adv", "success", (nd, "LA_fact_overwrite"), (mp, "LA_fact_overwrite")))
+    out.append(compare(recs, "locomo_adv", "success", (mp, "LA_fact_overwrite"), (tr, "LA_fact_overwrite")))
+    # 5) LoCoMo-Adv: fact overwrite ASR and target accuracy under every family
     out.append(compare(recs, "locomo_adv", "success", (nd, "LA_fact_overwrite"), (tr, "LA_fact_overwrite")))
     out.append(compare(recs, "locomo_adv", "success", (co, "LA_fact_overwrite"), (tr, "LA_fact_overwrite")))
     return [r for r in out if r]

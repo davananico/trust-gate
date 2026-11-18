@@ -65,3 +65,32 @@ import statements; 73 tests pass.
 **Docs:** `README.md` rewritten (all experiments, full layout, documentation index); status lines in
 `docs/dataset2_plan.md` and `docs/adaptive_attacks_spec.md` brought up to date; RUNBOOK gained a section for the
 additional experiments.
+
+## 18 Nov 2026 — literature baseline: MemPoison consistency check (after test)
+
+**Why:** a reviewer will ask for a baseline from the literature run on the same data, not only our own variants.
+MemPoison (Gao et al., arXiv 2607.14651) publishes a write-time consistency check without an LLM; its code is MIT.
+
+**What:** `src/gate/mempoison_consistency.py` ports `consistency_conflict_score()` from
+github.com/resautu6/MemPoison (commit 7b4dd80, `src/mempoison/substrates.py`) line by line, with their default
+threshold 0.58 (**not tuned** on our data, dev or test). Gate mode `mempoison_consistency` in
+`src/gate/trust_gate.py` (new branch only; logged `t_final` = −risk; no LLM call, no quarantine) and variant
+`mempoison_consistency` in `config/experiment.yaml` (`default: false`). `MemoryStore.contents()` added (returns
+every active memory; used only by this mode). Tests: `tests/test_mempoison_consistency.py` (5). 78 tests pass.
+
+**Port check:** our function and MemPoison's own `consistency_conflict_score()` (imported from a clone of their
+repo at commit 7b4dd80, not copied into this repo) were run on the same inputs: 5,000 random (candidate, memory set)
+pairs drawn from the 3,156 distinct dev memories of the 4 models (memory sets of 1, 10, 100 or 400): **0 differences**
+(4,640 pairs with risk > 0). Dev data only.
+
+**Kept as in their code (reported, not fixed):** (1) the token regex keeps '.', so the last word of a sentence
+("sweden.") counts as a "special" token, and two memories ending in different words get the 0.35 mismatch term;
+(2) update words ("now", "moved", "changed", "use", …) raise the risk by design.
+
+**Differences from their pipeline:** in ours the gate sees the active memory as it was at the start of a session
+(candidates of the same session are not compared with each other), as for every gate here; MemPoison writes record
+by record. Their source exemption ("context", "episode_summary" are never checked) does not apply: our sources are
+dialog and external pages, which correspond to their checked "user_input" and "tool_return".
+
+**Why the earlier results cannot change:** existing branches of `compute_signals()` / `decide_candidate()` are
+untouched; the default variant set is unchanged.

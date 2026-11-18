@@ -85,6 +85,10 @@ class MemoryStore:
     def count(self):
         return self.db._collection.count()
 
+    def contents(self):
+        """Text of every active memory (used only by the MemPoison consistency baseline, which compares with all)."""
+        return self.db._collection.get(include=["documents"])["documents"]
+
 
 if __name__ == "__main__":
     import json

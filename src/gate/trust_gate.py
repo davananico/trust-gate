@@ -13,6 +13,7 @@ from memory_writer simply do not carry those fields.
 """
 from dataclasses import dataclass
 
+from gate import mempoison_consistency
 from gate.llm_signals import N_NEIGHBORS, content_confidence, contradiction
 from gate.scoring import decide, pattern_hits, source_span, source_trust, trust_score
 
@@ -21,6 +22,8 @@ from gate.scoring import decide, pattern_hits, source_span, source_trust, trust_
 class GateParams:
     mode: str = "trust"            # "trust" = Trust Gate; "content_only" = content-only baseline gate (C_content only);
                                    # "contradiction_only" = contradiction-only baseline gate (LLM judge only; added after test)
+                                   # "mempoison_consistency" = MemPoison's heuristic check, no LLM, its own fixed
+                                   # threshold 0.58 (theta_* ignored; added after test)
     theta_accept: float = 0.5      # placeholder default; tuned per model on dev (config/gate_thresholds.yaml)
     theta_reject: float = 0.2      # placeholder default; tuned per model on dev (config/gate_thresholds.yaml)
     lambda_r: float = 1.0
@@ -36,6 +39,11 @@ class GateParams:
 def compute_signals(cand, chunk_text, store, llm, params):
     span = source_span(cand["content"], chunk_text)
     hits = pattern_hits(span)
+    if params.mode == "mempoison_consistency":
+        # no LLM call; compared with EVERY active memory, as in MemPoison
+        risk = mempoison_consistency.consistency_conflict_score(cand["content"], store.contents() if store.count() else [])
+        return {"t_source": source_trust(cand["source"]), "c_content": None, "r_contradiction": None,
+                "r_pattern": 1.0 if hits else 0.0, "patterns": ",".join(hits), "age_days": 0.0, "r_consistency": risk}
     r_contra = None
     if params.needs_contradiction:
         neighbors = [m["content"] for m in store.retrieve(cand["content"], k=N_NEIGHBORS)] if store.count() else []
@@ -50,6 +58,10 @@ def compute_signals(cand, chunk_text, store, llm, params):
 
 def decide_candidate(sig, params):
     """Returns (T_final, decision). Pure function, also used to recompute thresholds/ablations."""
+    if params.mode == "mempoison_consistency":
+        # logged T_final = -risk; MemPoison rejects at risk >= 0.58 and has no quarantine
+        risk = sig["r_consistency"]
+        return -risk, "reject" if risk >= mempoison_consistency.THRESHOLD else "accept"
     if params.mode == "content_only":
         score = sig["c_content"]
     elif params.mode == "contradiction_only":

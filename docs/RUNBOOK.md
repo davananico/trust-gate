@@ -194,6 +194,13 @@ tmux new -d -s lme "cd ~/trust-gate && .venv/bin/python run_lme.py --split lme >
 .venv/bin/python src/make_locomo_adv_cases.py
 RESULTS_DIR=results/post_test .venv/bin/python run_locomo_adv.py --split test --variants trust contradiction_only
 RESULTS_DIR=results/post_test .venv/bin/python run_experiment.py --split test --variants contradiction_only
+
+# literature baseline (MemPoison consistency check, no LLM in the gate); own folder: file names equal the runs above
+export RESULTS_DIR=results/post_test_mempoison
+.venv/bin/python run_experiment.py --split test --variants mempoison_consistency
+.venv/bin/python run_adaptive.py --split test --variants mempoison_consistency
+.venv/bin/python run_lme.py --split lme --variants mempoison_consistency
+.venv/bin/python run_locomo_adv.py --split test --variants mempoison_consistency
 ```
 
 Analysis on the laptop (no LLM): `src/adaptive_analysis.py`, `src/plots_adaptive.py`, `src/time_sensitivity.py`,

@@ -16,6 +16,9 @@ gate_variants:
   # judge. Uses the Trust Gate thresholds: with theta in (-1, 0] it accepts iff the judge says "no conflict",
   # so no tuning is involved. Not part of the default run; select it with --variants contradiction_only.
   contradiction_only: {mode: contradiction_only, threshold_from: trust, default: false}
+  # Added AFTER the test run (18 Nov 2026): literature baseline, MemPoison's write-time consistency check
+  # (src/gate/mempoison_consistency.py). No LLM; uses its own fixed threshold 0.58, so threshold_from is ignored.
+  mempoison_consistency: {mode: mempoison_consistency, threshold_from: trust, default: false}
 
 # Reference (locked in the code, not read from here):
 #   retrieval: BAAI/bge-small-en-v1.5, cosine, k = 10         (src/memory_store.py)
