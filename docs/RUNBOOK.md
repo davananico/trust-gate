@@ -91,7 +91,7 @@ uv pip install --python .venv -r requirements.txt
 cp .env.example .env                  # LLM_MODEL=ollama:qwen3:8b, OLLAMA_HOST=http://127.0.0.1:11434
 .venv/bin/python -m pytest -q
 ```
-Expected: `52 passed`. The first run downloads the embedding model `BAAI/bge-small-en-v1.5` (~130 MB).
+Expected: `73 passed`. The first run downloads the embedding model `BAAI/bge-small-en-v1.5` (~130 MB).
 
 From here on, every command is a **server** command run inside `~/trust-gate` (prefix `.venv/bin/python`).
 
@@ -114,7 +114,7 @@ Expected: `All validation checks passed.` and `Poison cases: 147 ... A2 dev and 
 .venv/bin/python src/demo.py
 ```
 Expected: three panels for case T01 — no poison answers `Sweden`, poisoned without defense answers `Norway`,
-poisoned + Trust Gate answers `Sweden` (the demo uses placeholder thresholds; it is not part of the experiment).
+poisoned + Trust Gate answers `Sweden` (the demo uses the model's locked thresholds; it is not part of the experiment).
 
 ---
 
@@ -174,6 +174,31 @@ scp "USERNAME@SERVER:~/trust-gate/results/summary_test_*" results/test_final/
 ```
 Output: `results/test_final/figures/` (fig1, fig2 as PNG + PDF, `figure_data.csv`) and
 `results/test_final/error_analysis/` (CSV rows + `summary.txt`). The write-up is in `docs/error_analysis.md`.
+
+---
+
+## 10. Additional experiments (same locked gate, server)
+
+Each one re-uses the graph, gate and thresholds of step 7; nothing is tuned.
+
+```
+# adaptive attacks (docs/adaptive_attacks_spec.md); dev first, test once after the attacks are frozen
+.venv/bin/python src/make_adaptive_attacks.py
+tmux new -d -s adapt "cd ~/trust-gate && .venv/bin/python run_adaptive.py --split test > results/adaptive_test_log.txt 2>&1"
+
+# LongMemEval (needs data/raw/longmemeval/, see docs/dataset2_plan.md); pilot first, never reported
+.venv/bin/python run_lme.py --split pilot --models ollama:qwen3:8b
+tmux new -d -s lme "cd ~/trust-gate && .venv/bin/python run_lme.py --split lme > results/lme_log.txt 2>&1"
+
+# post-test additions write to a separate folder so locked outputs are never overwritten
+.venv/bin/python src/make_locomo_adv_cases.py
+RESULTS_DIR=results/post_test .venv/bin/python run_locomo_adv.py --split test --variants trust contradiction_only
+RESULTS_DIR=results/post_test .venv/bin/python run_experiment.py --split test --variants contradiction_only
+```
+
+Analysis on the laptop (no LLM): `src/adaptive_analysis.py`, `src/plots_adaptive.py`, `src/time_sensitivity.py`,
+`src/pooled_analysis.py` (usage at the top of each file). Write-ups: `docs/adaptive_results.md`,
+`docs/lme_results.md`, `docs/locomo_adv_comparison.md`.
 
 ---
 

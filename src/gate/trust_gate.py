@@ -19,7 +19,8 @@ from gate.scoring import decide, pattern_hits, source_span, source_trust, trust_
 
 @dataclass(frozen=True)
 class GateParams:
-    mode: str = "trust"            # "trust" = Trust Gate; "content_only" = content-only baseline gate (C_content only)
+    mode: str = "trust"            # "trust" = Trust Gate; "content_only" = content-only baseline gate (C_content only);
+                                   # "contradiction_only" = contradiction-only baseline gate (LLM judge only; added after test)
     theta_accept: float = 0.5      # placeholder default; tuned per model on dev (config/gate_thresholds.yaml)
     theta_reject: float = 0.2      # placeholder default; tuned per model on dev (config/gate_thresholds.yaml)
     lambda_r: float = 1.0
@@ -29,7 +30,7 @@ class GateParams:
 
     @property
     def needs_contradiction(self):
-        return self.mode == "trust" and self.use_poison_risk
+        return self.mode == "contradiction_only" or (self.mode == "trust" and self.use_poison_risk)
 
 
 def compute_signals(cand, chunk_text, store, llm, params):
@@ -51,6 +52,9 @@ def decide_candidate(sig, params):
     """Returns (T_final, decision). Pure function, also used to recompute thresholds/ablations."""
     if params.mode == "content_only":
         score = sig["c_content"]
+    elif params.mode == "contradiction_only":
+        # no source trust, no confidence, no pattern list: 0 if the judge sees no conflict, -lambda_r if it does
+        score = -params.lambda_r * (sig["r_contradiction"] or 0.0)
     else:
         t_src = sig["t_source"] if params.use_source_trust else 1.0
         r = max(sig["r_contradiction"] or 0.0, sig["r_pattern"]) if params.use_poison_risk else 0.0

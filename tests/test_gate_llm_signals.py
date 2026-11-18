@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-from gate.llm_signals import (context_window, contradiction, content_confidence, parse_confidence,  # noqa: E402
+from gate.llm_signals import (content_confidence, context_window, contradiction, parse_confidence,  # noqa: E402
                               parse_yes_no)
 from llm import FakeModel  # noqa: E402
 

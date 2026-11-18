@@ -4,7 +4,6 @@ textnorm.py — text normalization for comparing answers.
 normalize("The 'Guinea Pig'!")  -> "guinea pig"
 Steps: lowercase, remove punctuation, remove articles (a, an, the), collapse whitespace.
 """
-import re
 import string
 
 _PUNCT = str.maketrans({c: " " for c in string.punctuation + "‘’“”–—"})

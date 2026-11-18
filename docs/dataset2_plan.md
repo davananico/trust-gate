@@ -1,6 +1,6 @@
-# Second dataset — LongMemEval (plan, needs decisions)
+# Second dataset — LongMemEval (design)
 
-Drafted 17 Nov 2026. Nothing here has been run with a real model.
+Drafted and decided 17 Nov 2026, before the reported run. Results: `docs/lme_results.md`.
 
 ## Source
 
@@ -23,7 +23,7 @@ Drafted 17 Nov 2026. Nothing here has been run with a real model.
 - 56 `poison_target`: single-session-user questions, answer ≤ 4 words, stated literally in one user turn.
 - 70 `update_probe`: knowledge-update questions with the old and new value in two different user sessions.
 
-## Design (proposed)
+## Design
 
 1. **Thresholds are not retuned.** The gate runs with the thresholds locked on LoCoMo dev. There is no
    LongMemEval dev split; the whole set is a transfer test. A pilot of 3 poison targets checks the pipeline and is
@@ -56,11 +56,11 @@ Expected a few hours per model on one L4.
   the question.
 - `run_lme.py`: no defense vs Trust Gate with the LoCoMo-locked thresholds. Metrics: target accuracy, ASR and PMAR per
   attack, FRR dialog/external, update accuracy, update-rejection rate.
-- `tests/test_lme.py` (6 tests). Dry run with the fake model OK.
+- `tests/test_lme.py` (7 tests). Dry run with the fake model OK.
 - **Pilot 1 (qwen3, 17 Nov 2026) — invalid, fixed:** with the speaker label "User", the locked writer prompt ("facts
   about the people in it ... use full names") returned `[]` for most sessions, including the poison turn (e.g. only
   2 of 10 sessions produced any memory). Fix without touching the prompt: the user is named "Emery" (3 occurrences in
   the whole raw file, none in the selected windows; tested), questions are asked as "Emery: <question>" (the A3-auth
   convention), and external pages name Emery instead of "this user". Pilot outputs moved to
-  `results/_invalid_lme_pilot_user_label/`. **The pilot must be rerun before the reported run.**
+  `results/_invalid_lme_pilot_user_label/`. The pilot was rerun with the fix (OK) before the reported run.
 - AD3 (flooding) needs a hand-written topic per target and AD4 is a per-conversation scenario; both are LoCoMo-only.

@@ -1,6 +1,7 @@
 # Adaptive attacks — specification (written before any real-model run)
 
-Drafted 17 Nov 2026. Status: **draft until the dev run is reviewed**; frozen (with checksums) before the single test run.
+Drafted 17 Nov 2026. Status: **frozen** after the dev run (revisions below), with checksums in
+`docs/adaptive_test_manifest.txt`, before the single test run. Results: `docs/adaptive_results.md`.
 
 ## Why
 
@@ -56,7 +57,8 @@ no hit of their own (checked by `tests/test_adaptive.py`).
   turns as memories (opinion-like sentences such as "Honestly, {T} means a lot to me."), and the true fact was
   outside the judge's 5 neighbours for only 2 of 14 poisons (3 of 14 for AD1, which has no fillers). The attack
   failed at the writer, so it did not test the gate. v2 fillers are dated events ("Last Sunday I talked about {T}
-  with my sister for a long time."). Only the 49 AD3 cases changed; v1 is kept in `data/adaptive_cases_v1.json`.
+  with my sister for a long time."). Only the 49 AD3 cases changed; the v1 file (`data/adaptive_cases_v1.json`) was removed on 18 Nov 2026 and is
+  in git history (commit `ea80e46`).
   v1 dev results (all 4 models) are kept in `results/adaptive_dev_*`; v2 dev results in `results/adaptive_dev_*_AD3*`.
 - **17 Nov 2026, AD3 v2 frozen (no further revision).** qwen3 dev: the writer recorded 33 of 90 v2 fillers, yet the
   true fact left the judge's 5 neighbours in only 1 of 14 cases (the true memory stays the poison's nearest

@@ -5,8 +5,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
-import locomo  # noqa: E402
 import llm  # noqa: E402
+import locomo  # noqa: E402
 from memory_writer import parse_list, parse_list_status, write_memories  # noqa: E402
 
 case_by_id = {c["case_id"]: c for c in json.load(open(ROOT / "data" / "poison_cases.json", encoding="utf-8"))}

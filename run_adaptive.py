@@ -17,6 +17,7 @@ Output per model (results/):
 import argparse
 import csv
 import json
+import os
 import re
 import sqlite3
 import sys
@@ -42,7 +43,8 @@ from memory_writer import PARSE_STATS  # noqa: E402
 from run_experiment import gate_params  # noqa: E402
 from textnorm import contains_any  # noqa: E402
 
-DATA, RESULTS = ROOT / "data", ROOT / "results"
+# RESULTS_DIR: write to another folder (used for runs added after the test, so locked outputs are not overwritten)
+DATA, RESULTS = ROOT / "data", Path(os.getenv("RESULTS_DIR", ROOT / "results"))
 ATTACKS = ("AD1_split_assertion", "AD2_lexicon_free", "AD3_flooding", "AD4_dialog_auth")
 
 

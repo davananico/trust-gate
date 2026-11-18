@@ -23,3 +23,45 @@ The manifest checksums no longer match for the translated files; this is expecte
 - YAML files: `yaml.safe_load` returns identical values before and after.
 - Test suite: 52 passed after the change.
 - Figures were regenerated from the unchanged result files; only labels changed (the content-only gate code "K" became "C").
+
+## 18 Nov 2026 — contradiction-only baseline, pooled analysis, LoCoMo-Adv comparison (additions)
+
+Added after every test result had been seen, at the author's request, to answer reviewer questions. All are
+**additions**: the Trust Gate, its thresholds, prompts, data and earlier outputs are unchanged, and they are
+reported as post-hoc in the paper.
+
+**What changed:**
+- `src/gate/trust_gate.py`: new `GateParams.mode = "contradiction_only"` (score = −λ_r · R_contradiction; no source
+  trust, no confidence, no pattern list). `needs_contradiction` is also true for this mode. The `trust` and
+  `content_only` branches are untouched.
+- `config/experiment.yaml`: new variant `contradiction_only` (Trust Gate thresholds; `default: false`, so the
+  default run is unchanged). With θ ∈ (−1, 0] it accepts iff the judge says "no conflict": no tuning involved.
+- `run_experiment.py`, `run_adaptive.py`, `run_lme.py`: `RESULTS_DIR` environment variable (default `results/`), so
+  post-test runs write to `results/post_test/` and cannot overwrite locked outputs; `run_experiment.py` honours
+  `default: false`.
+- New: `src/make_locomo_adv_cases.py`, `data/locomo_adv_cases.json`, `run_locomo_adv.py` (see
+  `docs/locomo_adv_comparison.md`), `src/pooled_analysis.py` (read-only), tests `tests/test_locomo_adv.py` and one
+  new test in `tests/test_trust_gate.py`. 73 tests pass (laptop and server).
+
+**Why the earlier results cannot change:** the default variant set and every existing branch of
+`decide_candidate()` are byte-for-byte the same logic; the post-test runs re-use the LLM cache, and their
+`no_defense` condition is recomputed from cache only to pair trials (pooled analysis keeps the original copy).
+
+## 18 Nov 2026 — repository cleanup (non-functional)
+
+**Removed** (still in git history): `src/hello_graph.py` (LangGraph warm-up exercise, never part of the experiment),
+`src/run_week2.py` (no-defense runner, superseded by `run_experiment.py`; its numbers were never reported),
+`data/adaptive_cases_v1.json` (AD3 v1, replaced on dev; see `docs/adaptive_attacks_spec.md`) and
+`prompts/archive/gate_contradiction_v1.txt` (contradiction prompt v1, replaced on dev; see `docs/prompt_log.md`).
+Local, git-ignored outputs of the fake model and of the two runs already marked invalid were deleted as well.
+`docs/test_run_manifest.txt` still lists the two removed source files: it records the state at the test run.
+
+**Code:** two unused imports removed (`re` in `src/textnorm.py`, `Path` in `src/tune_gate.py`), imports sorted in two
+test files and `run_locomo_adv.py`, a few over-long lines wrapped in `src/time_sensitivity.py`,
+`src/pooled_analysis.py` and `src/plots_adaptive.py`, one comment updated in `src/make_adaptive_attacks.py`.
+Evidence: the AST of every edited file is identical to its previous version, apart from the removed or reordered
+import statements; 73 tests pass.
+
+**Docs:** `README.md` rewritten (all experiments, full layout, documentation index); status lines in
+`docs/dataset2_plan.md` and `docs/adaptive_attacks_spec.md` brought up to date; RUNBOOK gained a section for the
+additional experiments.

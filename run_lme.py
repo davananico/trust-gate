@@ -16,6 +16,7 @@ Output (results/): lme_<split>_<model>.csv, lme_<split>_<model>_gate.sqlite, lme
 import argparse
 import csv
 import json
+import os
 import re
 import sqlite3
 import sys
@@ -41,7 +42,8 @@ from memory_writer import PARSE_STATS  # noqa: E402
 from run_experiment import gate_params  # noqa: E402
 from textnorm import contains_any  # noqa: E402
 
-DATA, RESULTS = ROOT / "data", ROOT / "results"
+# RESULTS_DIR: write to another folder (used for runs added after the test, so locked outputs are not overwritten)
+DATA, RESULTS = ROOT / "data", Path(os.getenv("RESULTS_DIR", ROOT / "results"))
 load = lambda name: json.load(open(DATA / name, encoding="utf-8"))
 ATTACKS = ("A1_false_fact", "A2_confident_poison", "A3_external_source", "AD1_split_assertion", "AD2_lexicon_free")
 

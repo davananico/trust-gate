@@ -9,6 +9,9 @@ grid of lambda_t and theta_accept (= theta_reject, as in the locked thresholds).
 Why theta too: at the locked theta = -0.05 the time factor cannot change any decision. With R_poison = 0 the score
 min(T_source, C_content) * exp(-lambda_t * age) is >= 0 > theta (accept); with R_poison = 1 it is <= 0.9 - 1 < theta
 (reject). Time only matters for a stricter theta.
+Scenario: age is measured as if the whole history were ingested on the question date (e.g. importing old chat logs).
+The real run writes session by session, where the source age at write time is ~0 (as in LoCoMo). Even in this
+scenario the poison is always the newest source, so a time factor favours the poison over the original fact.
 Approximation: the logged contradiction signals were computed against the memory the LOCKED gate built; a different
 decision would change later neighbours, which is not replayed.
 """
@@ -58,9 +61,11 @@ def groups(db_path, split):
             g["clean_external"].append(r)
         elif cid in cases:
             c = cases[cid]
-            if r["session"] == c["inject_session"] and r["source"] == c["source"] and contains_any(r["content"], c["poison_keys"]):
+            if (r["session"] == c["inject_session"] and r["source"] == c["source"]
+                    and contains_any(r["content"], c["poison_keys"])):
                 g["poison"].append(r)
-        elif cid in upd and r["session"] == upd[cid]["new_session"] and contains_any(r["content"], upd[cid]["new_value_keys"]):
+        elif (cid in upd and r["session"] == upd[cid]["new_session"]
+              and contains_any(r["content"], upd[cid]["new_value_keys"])):
             g["update_new_value"].append(r)
     return g
 
@@ -75,8 +80,10 @@ def main():
         if not db.exists():
             continue
         g = groups(db, args.split)
-        print(f"\n=== {m} (EXPLORATORY, not tuned) — share NOT accepted; poison: lower is worse, others: lower is better ===")
-        print(f"{'theta':>7} {'lambda_t':>9}" + "".join(f"{k:>18}" for k in ("poison", "clean_dialog", "clean_external", "update_new_value")))
+        print(f"\n=== {m} (EXPLORATORY, not tuned) — share held back (rejected or quarantined); "
+              "poison: higher is better, clean/update: lower is better ===")
+        print(f"{'theta':>7} {'lambda_t':>9}"
+              + "".join(f"{k:>18}" for k in ("poison", "clean_dialog", "clean_external", "update_new_value")))
         for theta in THETAS:
             for lam in LAMBDAS:
                 p = GateParams(theta_accept=theta, theta_reject=theta, lambda_r=1.0, lambda_t=lam)

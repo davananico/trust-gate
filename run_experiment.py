@@ -41,7 +41,8 @@ from memory_store import K, LocalEmbeddings, MemoryStore  # noqa: E402
 from memory_writer import PARSE_STATS  # noqa: E402
 from tune_gate import ATTACKS, labelled_rows  # noqa: E402
 
-DATA, RESULTS = ROOT / "data", ROOT / "results"
+# RESULTS_DIR: write to another folder (used for runs added after the test, so locked outputs are not overwritten)
+DATA, RESULTS = ROOT / "data", Path(os.getenv("RESULTS_DIR", ROOT / "results"))
 load = lambda name: json.load(open(DATA / name, encoding="utf-8"))
 ATTACK_KINDS = ATTACKS[:3]
 
@@ -200,7 +201,8 @@ def main():
     ap.add_argument("--variants", nargs="*", help="subset of gate variants (default: all)")
     args = ap.parse_args()
     cfg = yaml.safe_load((ROOT / "config" / "experiment.yaml").read_text(encoding="utf-8"))
-    variants = {k: v for k, v in cfg["gate_variants"].items() if not args.variants or k in args.variants}
+    variants = {k: v for k, v in cfg["gate_variants"].items()
+                if (k in args.variants if args.variants else v.get("default", True))}
     RESULTS.mkdir(exist_ok=True)
     enable_cache()
     for model in args.models or cfg["models"]:

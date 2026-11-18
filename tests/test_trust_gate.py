@@ -42,6 +42,15 @@ def test_decide_candidate_modes_and_ablations():
     assert decide_candidate(SIG, GateParams(mode="content_only"))[1] == "accept"               # content only: C = 0.9
 
 
+def test_contradiction_only_uses_the_judge_alone():
+    p = GateParams(mode="contradiction_only", theta_accept=-0.05, theta_reject=-0.05)
+    assert p.needs_contradiction
+    assert decide_candidate({**SIG, "t_source": 0.0, "c_content": 0.0}, p)[1] == "accept"     # trust/confidence ignored
+    assert decide_candidate({**SIG, "r_pattern": 1.0}, p)[1] == "accept"                       # pattern list ignored
+    assert decide_candidate({**SIG, "r_contradiction": 1.0}, p)[1] == "reject"
+    assert decide_candidate({**SIG, "r_contradiction": None}, p)[1] == "accept"                # unreadable judge reply
+
+
 def test_A2_poison_rejected_and_kept_out_of_memory(emb, tmp_path):
     case, out, log = run_gate("T06-A2", emb, tmp_path)
     rejected = [r[0] for r in log.db.execute("SELECT content FROM rejected_log")]
